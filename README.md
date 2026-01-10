@@ -1,0 +1,148 @@
+# Zig Conway
+
+A terminal-based Conway's Game of Life simulation implemented in Zig ⚡.
+Supports configurable matrix size, alive cell probability, mutations, double buffering, ASCII/block rendering, and color support.
+
+---
+
+## Features
+
+- Configurable life simulation with adjustable:
+ - Matrix size (dynamic to terminal)
+ - Initial alive probability
+ - Mutation frequency, less than 0 to disable
+ - Characters modes for rendering
+ - Characters colors
+- Debug mode displaying internal state such as population, generation, memory usage, and seed
+- Cross-platform signal handling for clean exit (Windows / Unix/Linux)
+
+---
+
+## Build & Run
+
+### Requirements
+- Zig compiler (Tested on 0.15.1)
+
+### Build
+```sh
+  zig build
+```
+
+### Run
+```sh
+  zig-out/bin/zig-conway [options]
+```
+
+---
+
+## Dynamic Matrix Size
+
+The simulation adapts automatically to the size of your terminal window.  
+
+- Number of rows and columns is detected at runtime.
+- Resizing the terminal while running adjusts the matrix dimensions dynamically.  
+- Ensures the simulation always fills the visible area.
+
+## Command Line Options
+
+| Option | Description | Default | Values |
+|--------|-------------|---------|--------|
+| `-h`, `--help` | Show the help message | — | — |
+| `-v`, `--version` | Show project's version | — | — |
+| `-d` | Enable debug mode | Off | — |
+| `-s` | Random seed | Current timestamp in ms | Any unsigned integer |
+| `-ms` | Frame delay in milliseconds | 50 | Any unsigned integer |
+| `-l` | Initial alive probability (%) | 0.3 | 0 - 1 |
+| `-m` | Character mode | Ascii_L | Ascii_L, Ascii_M, Ascii_S, Block |
+| `-c` | Character color | Green | White, Black, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple, Gray, Pink, Brown, Aqua, Navy, Teal, NeonPink, NeonGreen, NeonBlue, NeonYellow, NeonOrange, NeonPurple, NeonCyan, NeonRed |
+| `-g` | Mutation generation | -1 | Any unsigned integer (generations before mutating) or less than 0 to disable |
+
+##  Mutation / Random Impulse
+
+To prevent static states:
+ - Mutations invert a small percentage of cells after a defined number of generations.
+ - The percentage is proportional to matrix size (0.1%).
+ - Configurable via the -g option.
+
+## Color & Rendering
+
+- Supports ASCII or Unicode block characters for alive cells.
+- Dead cells are spaces ' '.
+- Alive cells can be colored using ANSI escape codes.
+- Example character sets:
+
+| Mode | Alive Char | Dead Char | Notes |
+| -----| ---------- | --------- | ----- |
+| Ascii_S | `.` | ` ` | Small ASCII |
+| Ascii_M | `*` | ` ` | Medium ASCII |
+| Ascii_L | `#` | ` ` | Large ASCII |
+| Block   | `█` | ` ` | Unicode block, wider |
+
+
+---
+
+### Examples
+#### Run with default settings:
+
+```sh
+  zig-out/bin/zig-conway
+```
+
+#### Run in debug mode:
+```sh
+  zig-out/bin/zig-conway -d
+```
+
+#### Set custom seed:
+```sh
+  zig-out/bin/zig-conway -s 12345
+```
+
+#### Set custom frame delay:
+```sh
+  zig-out/bin/zig-conway -ms 150
+```
+
+#### Set custom alive probability percentage:
+```sh
+  zig-out/bin/zig-conway -l 0.50
+```
+
+#### Use a specific character mode:
+```sh
+  zig-out/bin/zig-conway -m Ascii_S
+```
+
+#### Use a specific character color:
+```sh
+  zig-out/bin/zig-conway -c NeonPink
+```
+
+#### Set custom mutation generation frequency:
+```sh
+  zig-out/bin/zig-conway -g 30
+```
+
+---
+
+## Debug Mode
+
+When enabled (-d), the program will print additional runtime information:
+- Project name and version
+- Memory usage (persistent & scratch)
+- Execution parameters: speed, alive probability, mutation generation, mode, color
+- Random seed and matrix dimensions
+- Population of alive cells per generation
+
+---
+
+## Signal Handling
+
+- Windows: Uses SetConsoleCtrlHandler for intercepting CTRL+C.
+- Unix/Linux: Captures SIGINT (Ctrl+C).
+- Both ensure:
+  - Cleaning the console
+  - Showing the cursor again
+  - Graceful shutdown
+
+---

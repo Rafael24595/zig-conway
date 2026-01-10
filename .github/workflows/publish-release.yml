@@ -1,0 +1,82 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract and validate version from build.zig.zon
+        id: check
+        run: |
+          VERSION=$(grep -Po '\.version\s*=\s*"\K[^"]+' build.zig.zon)
+          if [[ -z "$VERSION" ]]; then
+            echo "❌ No se encontró el campo 'version' en build.zig.zon"
+            exit 1
+          fi
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9\.-]+)?$ ]]; then
+            echo "❌ Formato de versión inválido: $VERSION"
+            echo "✅ Formato esperado: 1.2.3 o 1.2.3-beta.1"
+            exit 1
+          fi
+
+          echo "✅ Versión válida: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+  build:
+    needs: validate-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Instalar Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Build Linux binary
+        run: |
+          VERSION=${{ needs.validate-version.outputs.version }}
+          zig build -Dtarget=x86_64-linux-gnu -Doptimize=ReleaseFast
+          mkdir -p release-linux-$VERSION
+          cp zig-out/bin/* release-linux-$VERSION/
+          zip -r release-linux-$VERSION.zip release-linux-$VERSION
+
+      - name: Build Windows binary
+        run: |
+          VERSION=${{ needs.validate-version.outputs.version }}
+          zig build -Dtarget=x86_64-windows-gnu -Doptimize=ReleaseFast
+          mkdir -p release-windows-$VERSION
+          cp zig-out/bin/* release-windows-$VERSION/
+          zip -r release-windows-$VERSION.zip release-windows-$VERSION
+
+      - name: Crear y push del tag
+        run: |
+          VERSION=${{ needs.validate-version.outputs.version }}
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag $VERSION
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git push origin $VERSION
+
+      - name: Publicar release en GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate-version.outputs.version }}
+          files: |
+            release-linux-${{ needs.validate-version.outputs.version }}.zip
+            release-windows-${{ needs.validate-version.outputs.version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

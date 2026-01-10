@@ -1,0 +1,13 @@
+.{
+    .name = .zig_conway,
+    .version = "0.1.0",
+    .fingerprint = 0xb7e88ad7ee5e3e4b,
+    .minimum_zig_version = "0.15.1",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "README.md",
+    },
+}
