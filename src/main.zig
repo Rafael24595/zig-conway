@@ -14,6 +14,7 @@ const Printer = @import("io/printer.zig").Printer;
 const MatrixPrinter = @import("io/matrix_printer.zig").MatrixPrinter;
 
 const matrix = @import("domain/matrix.zig");
+const color = @import("domain/color.zig");
 
 var exit_requested: bool = false;
 
@@ -33,23 +34,57 @@ pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(scratchAllocator.allocator());
     defer arena.deinit();
 
-    var printer = Printer{ .arena = &arena, .out = std.fs.File.stdout() };
+    var printer = Printer{
+        .arena = &arena,
+        .out = std.fs.File.stdout(),
+    };
+
     defer printer.reset();
 
-    const config = try configuration.fromArgs(persistentAllocator.allocator(), &printer);
+    const config = try configuration.fromArgs(
+        persistentAllocator.allocator(),
+        &printer,
+    );
 
-    try run(&persistentAllocator, &scratchAllocator, &config, &printer);
+    try run(
+        &persistentAllocator,
+        &scratchAllocator,
+        &config,
+        &printer,
+    );
 }
 
 pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTracer, config: *const configuration.Configuration, printer: *Printer) !void {
     try defineSignalHandlers();
 
     var persistent = persistentAllocator.allocator();
-    var scratch = scratchAllocator.allocator();
 
     var lcg = MiniLCG.init(config.seed);
 
-    var matrixPrinter = MatrixPrinter(console.COLOR_WRAPPER_BYTES, console.COLOR_WRAPPER_PREFIX, console.COLOR_WRAPPER_SUFIX).init(&persistent, printer, config.mode, config.color);
+    var color_manager = try color.ColorManager.init(
+        &persistent,
+        &lcg,
+        &color.DEFAULT_TABLE,
+    );
+
+    var mtrx_printer = try MatrixPrinter.init(
+        &persistent,
+        printer,
+        config.color,
+        config.formatter_matrix,
+        config.formatter_cell,
+        config.symbol_mode,
+    );
+
+    defer printer.reset();
+    defer mtrx_printer.reset();
+
+    try printer.print(console.CLEAN_CONSOLE);
+    try printer.print(console.HIDE_CURSOR);
+
+    defer printer.prints(console.CLEAN_CONSOLE);
+    defer printer.prints(console.SHOW_CURSOR);
+    defer printer.prints(console.RESET_CURSOR);
 
     while (!exit_requested) {
         const winsize = try console.winSize();
@@ -64,30 +99,39 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
         const cols = winsize.cols;
         const rows = winsize.rows - space;
-        const fixedArea = rows * cols;
 
-        var mtrx = matrix.Matrix.init(&persistent, &lcg, config.alive_probability, config.mutation_generation);
+        var mtrx = matrix.Matrix.init(
+            &persistent,
+            &lcg,
+            &color_manager,
+            config.alive_probability,
+            config.mutation_generation,
+        );
+
         try mtrx.build(cols, rows);
 
+        defer mtrx.free();
+
         try printer.print(console.CLEAN_CONSOLE);
-        try printer.print(console.HIDE_CURSOR);
 
         var persistentBytes = persistentAllocator.bytes();
         var scratchBytes = scratchAllocator.bytes();
         while (!exit_requested) {
             try printer.print(console.RESET_CURSOR);
-            if (config.debug) {
-                const end_ms = std.time.milliTimestamp();
-                const time = try utils.millisecondsToTime(scratch, end_ms - config.start_ms, null);
-                defer scratch.free(time);
 
-                try printer.printf("{}: {s}\n", .{ build.name, build.version });
-                try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes\n", .{ persistentBytes, scratchBytes });
-                try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Mode: {s} | Color: {s}\n", .{ config.seed, fixedArea, cols, rows, @tagName(config.mode), @tagName(config.color) });
-                try printer.printf("Speed: {d}ms | Probability: {d}% | Time: {s} | Population: {d} | Mutation: {d}/{d} \n", .{ config.milliseconds, config.alive_probability, time, mtrx.alive_population(), mtrx.current_generation(), mtrx.mutation_generation() });
+            if (config.debug) {
+                try print_debug(
+                    persistentAllocator,
+                    scratchAllocator,
+                    config,
+                    printer,
+                    &mtrx,
+                );
             }
-            try matrixPrinter.print(&mtrx);
+
+            try mtrx_printer.print(&mtrx);
             try mtrx.next();
+
             std.Thread.sleep(config.milliseconds * std.time.ns_per_ms);
 
             persistentBytes = persistentAllocator.bytes();
@@ -100,19 +144,65 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
                 break;
             }
         }
+    }
+}
 
-        try printer.print(console.CLEAN_CONSOLE);
+pub fn print_debug(
+    persistentAllocator: *AllocatorTracer,
+    scratchAllocator: *AllocatorTracer,
+    config: *const configuration.Configuration,
+    printer: *Printer,
+    mtrx: *matrix.Matrix,
+) !void {
+    var scratch = scratchAllocator.allocator();
 
-        mtrx.free();
+    const cols = mtrx.cols();
+    const rows = mtrx.rows();
+    const fixedArea = rows * cols;
+
+    const end_ms = std.time.milliTimestamp();
+    const time = try utils.millisecondsToTime(scratch, end_ms - config.start_ms, null);
+    defer scratch.free(time);
+
+    var col = @tagName(config.color);
+    if (config.inheritance) {
+        col = "*Inheritance";
     }
 
-    printer.reset();
+    var mut: []const u8 = "disabled";
+    if (mtrx.mutation_generation() >= 0) {
+        mut = try printer.format("{d}/{d}", .{
+            mtrx.current_generation(),
+            mtrx.mutation_generation(),
+        });
+    }
 
-    try printer.print(console.CLEAN_CONSOLE);
-    try printer.print("\n");
+    try printer.printf("{}: {s}\n", .{
+        build.name,
+        build.version,
+    });
 
-    try printer.print(console.SHOW_CURSOR);
-    try printer.print(console.RESET_CURSOR);
+    try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes\n", .{
+        persistentAllocator.bytes(),
+        scratchAllocator.bytes(),
+    });
+
+    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Mode: {s} | Color: {s}\n", .{
+        config.seed,
+        fixedArea,
+        cols,
+        rows,
+        @tagName(config.symbol_mode),
+        col,
+    });
+
+    try printer.printf("Speed: {d}ms | Probability: {d}% | Time: {s} | Population: {d} | Mutation: {s} \n", .{
+        config.milliseconds,
+        config.alive_probability,
+        time,
+        mtrx.alive_population(),
+        mut,
+    });
 }
 
 pub fn defineSignalHandlers() !void {

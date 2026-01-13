@@ -1,18 +1,18 @@
 pub const MiniLCG = struct {
     seed: u64 = 1,
 
-    pub fn init(seed: u64) MiniLCG {
+    pub fn init(seed: u64) @This() {
         return MiniLCG{ .seed = seed };
     }
 
-    fn next(self: *MiniLCG) u64 {
+    fn next(self: *@This()) u64 {
         const mul = @mulWithOverflow(self.seed, 1664525);
         const add = @addWithOverflow(mul[0], 1013904223);
         self.seed = add[0];
         return self.seed;
     }
 
-    pub fn randInRange(self: *MiniLCG, min: usize, max: usize) u8 {
+    pub fn randInRange(self: *@This(), min: usize, max: usize) u8 {
         var rnd: u64 = self.next();
 
         rnd = ((rnd >> 16) ^ (rnd >> 8)) & 0xFFFF;
@@ -26,7 +26,7 @@ pub const MiniLCG = struct {
         return @intCast(min64 + value);
     }
 
-    pub fn float(self: *MiniLCG) f32 {
+    pub fn float(self: *@This()) f32 {
         const rnd = self.next() >> 40;
         const rnd32: f32 = @floatFromInt(rnd);
         return rnd32 / (1 << 24);

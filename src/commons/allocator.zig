@@ -4,14 +4,14 @@ pub const AllocatorTracer = struct {
     base: *std.mem.Allocator,
     bytes_in_use: usize,
 
-    pub fn init(base: *std.mem.Allocator) AllocatorTracer {
+    pub fn init(base: *std.mem.Allocator) @This() {
         return AllocatorTracer{
             .base = base,
             .bytes_in_use = 0,
         };
     }
 
-    pub fn allocator(self: *AllocatorTracer) std.mem.Allocator {
+    pub fn allocator(self: *@This()) std.mem.Allocator {
         return std.mem.Allocator{
             .ptr = self,
             .vtable = &std.mem.Allocator.VTable{
@@ -23,7 +23,7 @@ pub const AllocatorTracer = struct {
         };
     }
 
-    pub fn alloc(self: *AllocatorTracer, len: usize, alignment: std.mem.Alignment, ret_addr: usize) ?[*]u8 {
+    pub fn alloc(self: *@This(), len: usize, alignment: std.mem.Alignment, ret_addr: usize) ?[*]u8 {
         const result = self.base.rawAlloc(len, alignment, ret_addr);
         if (result != null) {
             self.bytes_in_use += len;
@@ -31,7 +31,7 @@ pub const AllocatorTracer = struct {
         return result;
     }
 
-    pub fn resize(self: *AllocatorTracer, memory: []u8, alignment: std.mem.Alignment, new_len: usize, ret_addr: usize) bool {
+    pub fn resize(self: *@This(), memory: []u8, alignment: std.mem.Alignment, new_len: usize, ret_addr: usize) bool {
         const old_len = memory.len;
         const result = self.base.rawResize(memory, alignment, new_len, ret_addr);
         if (result) {
@@ -44,7 +44,7 @@ pub const AllocatorTracer = struct {
         return result;
     }
 
-    pub fn remap(self: *AllocatorTracer, memory: []u8, alignment: std.mem.Alignment, new_len: usize, ret_addr: usize) ?[*]u8 {
+    pub fn remap(self: *@This(), memory: []u8, alignment: std.mem.Alignment, new_len: usize, ret_addr: usize) ?[*]u8 {
         const old_len = memory.len;
         const result = self.base.rawRemap(memory, alignment, new_len, ret_addr);
         if (result != null) {
@@ -57,12 +57,12 @@ pub const AllocatorTracer = struct {
         return result;
     }
 
-    pub fn free(self: *AllocatorTracer, memory: []u8, alignment: std.mem.Alignment, ret_addr: usize) void {
+    pub fn free(self: *@This(), memory: []u8, alignment: std.mem.Alignment, ret_addr: usize) void {
         self.bytes_in_use -= memory.len;
         self.base.rawFree(memory, alignment, ret_addr);
     }
 
-    pub fn bytes(self: *AllocatorTracer) usize {
+    pub fn bytes(self: *@This()) usize {
         return self.bytes_in_use;
     }
 };

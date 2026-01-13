@@ -3,16 +3,21 @@
 A terminal-based Conway's Game of Life simulation implemented in Zig ⚡.
 Supports configurable matrix size, alive cell probability, mutations, double buffering, ASCII/block rendering, and color support.
 
+```Text
+Warning: This program has been tested on modern terminals (Terminal Windows 1.23.13503.0). Older terminals may exhibit slow rendering or display issues when using RGB color mode. For better performance, consider using ANSI mode, or disable inheritance mode for maximum speed.
+```
+
 ---
 
 ## Features
 
 - Configurable life simulation with adjustable:
- - Matrix size (dynamic to terminal)
- - Initial alive probability
- - Mutation frequency, less than 0 to disable
- - Characters modes for rendering
- - Characters colors
+  - Matrix size (dynamic to terminal)
+  - Initial alive probability
+  - Mutation frequency, less than 0 to disable
+  - Characters modes for rendering
+  - Characters colors
+- Color inheritance mode allows new cells to inherit or blend colors from parent cells
 - Debug mode displaying internal state such as population, generation, memory usage, and seed
 - Cross-platform signal handling for clean exit (Windows / Unix/Linux)
 
@@ -53,9 +58,11 @@ The simulation adapts automatically to the size of your terminal window.
 | `-s` | Random seed | Current timestamp in ms | Any unsigned integer |
 | `-ms` | Frame delay in milliseconds | 50 | Any unsigned integer |
 | `-l` | Initial alive probability (%) | 0.3 | 0 - 1 |
-| `-m` | Character mode | Ascii_L | Ascii_L, Ascii_M, Ascii_S, Block |
-| `-c` | Character color | Green | White, Black, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple, Gray, Pink, Brown, Aqua, Navy, Teal, NeonPink, NeonGreen, NeonBlue, NeonYellow, NeonOrange, NeonPurple, NeonCyan, NeonRed |
 | `-g` | Mutation generation | -1 | Any unsigned integer (generations before mutating) or less than 0 to disable |
+| `-sm` | Symbol mode | Ascii_L | Ascii_L, Ascii_M, Ascii_S, Block |
+| `-cm` | Color mode | RGB | RGB, ANSI |
+| `-i` | Enable inheritance mode.  Overrides color mode (-c) | Off | — |
+| `-c` | Color | Green | White, Black, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple, Gray, Pink, Brown, Aqua, Navy, Teal, NeonPink, NeonGreen, NeonBlue, NeonYellow, NeonOrange, NeonPurple, NeonCyan, NeonRed |
 
 ##  Mutation / Random Impulse
 
@@ -68,7 +75,10 @@ To prevent static states:
 
 - Supports ASCII or Unicode block characters for alive cells.
 - Dead cells are spaces ' '.
-- Alive cells can be colored using ANSI escape codes.
+- Alive cells can be colored using ANSI escape codes or RGB mode.
+- Inheritance mode allows new cells to either:
+  - Copy the color of a random neighbor
+  - Blend the colors of all alive neighbors
 - Example character sets:
 
 | Mode | Alive Char | Dead Char | Notes |
@@ -108,19 +118,24 @@ To prevent static states:
   zig-out/bin/zig-conway -l 0.50
 ```
 
-#### Use a specific character mode:
-```sh
-  zig-out/bin/zig-conway -m Ascii_S
-```
-
-#### Use a specific character color:
-```sh
-  zig-out/bin/zig-conway -c NeonPink
-```
-
 #### Set custom mutation generation frequency:
 ```sh
   zig-out/bin/zig-conway -g 30
+```
+
+#### Use a specific symbol mode:
+```sh
+  zig-out/bin/zig-conway -sm Ascii_M
+```
+
+#### Use a specific color mode:
+```sh
+  zig-out/bin/zig-conway -cm ANSI
+```
+
+#### Use a specific color:
+```sh
+  zig-out/bin/zig-conway -c NeonPink
 ```
 
 ---
