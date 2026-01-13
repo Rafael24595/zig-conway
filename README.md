@@ -105,7 +105,7 @@ To prevent static states:
 
 #### Set custom seed:
 ```sh
-  zig-out/bin/zig-conway -s 12345
+  zig-out/bin/zig-conway -s 1768304672407
 ```
 
 #### Set custom frame delay:
