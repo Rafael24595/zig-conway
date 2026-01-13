@@ -231,8 +231,11 @@ pub const Configuration = struct {
 
         const timestamp = std.time.milliTimestamp();
 
-        config.seed = @intCast(timestamp);
         config.start_ms = timestamp;
+        
+        if (config.seed == 0) {
+            config.seed = @intCast(timestamp);
+        }
 
         init_formatters(&config);
 
