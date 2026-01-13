@@ -216,7 +216,16 @@ pub const Matrix = struct {
         for (0..@max(1, mutation_count)) |_| {
             const y = self.lcg.randInRange(0, r - 1);
             const x = self.lcg.randInRange(0, c - 1);
-            matrix_current[y][x].status = !matrix_current[y][x].status;
+
+            const sta = !matrix_current[y][x].status;
+
+            var col: ?[3]u8 = null;
+            if (sta) {
+                col = self.color_manager.rand_color();
+            }
+
+            matrix_current[y][x].status = sta;
+            matrix_current[y][x].color = col;
         }
 
         self.cur_gen = 0;
