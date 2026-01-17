@@ -55,7 +55,7 @@ The simulation adapts automatically to the size of your terminal window.
 | `-h`, `--help` | Show the help message | — | — |
 | `-v`, `--version` | Show project's version | — | — |
 | `-d` | Enable debug mode | Off | — |
-| `-hc` | Show help controls | Off | — |
+| `-hc` | Show the controls map | Off | — |
 | `-s` | Random seed | Current timestamp in ms | Any unsigned integer |
 | `-ms` | Frame delay in milliseconds | 50 | Any unsigned integer |
 | `-l` | Initial alive probability (%) | 0.3 | 0 - 1 |

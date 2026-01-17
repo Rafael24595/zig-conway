@@ -46,7 +46,7 @@ pub const Configuration = struct {
                     \\  -h, --help        Show this help message
                     \\  -v, --version     Show project's version
                     \\  -d                Enable debug mode (default: off)
-                    \\  -hc               Show help controls (default: off)
+                    \\  -hc               Show the controls map (default: off)
                     \\  -s  <number>      Random seed (default: current time in ms)
                     \\  -ms <number>      Frame delay in ms (default: {d})
                     \\  -l  <number>      Alive probability (default: {d})
