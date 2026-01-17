@@ -11,6 +11,8 @@ const formatter = @import("../io/formatter.zig");
 
 pub const Configuration = struct {
     debug: bool = false,
+    controls: bool = false,
+
     seed: u64 = 0,
 
     start_ms: i64 = 0,
@@ -44,6 +46,7 @@ pub const Configuration = struct {
                     \\  -h, --help        Show this help message
                     \\  -v, --version     Show project's version
                     \\  -d                Enable debug mode (default: off)
+                    \\  -hc               Show help controls (default: off)
                     \\  -s  <number>      Random seed (default: current time in ms)
                     \\  -ms <number>      Frame delay in ms (default: {d})
                     \\  -l  <number>      Alive probability (default: {d})
@@ -74,6 +77,11 @@ pub const Configuration = struct {
 
             if (std.mem.eql(u8, arg, "-d")) {
                 config.debug = true;
+                continue;
+            }
+
+            if (std.mem.eql(u8, arg, "-hc")) {
+                config.controls = true;
                 continue;
             }
 
