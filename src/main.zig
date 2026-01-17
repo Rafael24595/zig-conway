@@ -1,6 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+const AtomicOrder = std.builtin.AtomicOrder;
+
 const build = @import("build.zig.zon");
 
 const configuration = @import("configuration/configuration.zig");
@@ -16,7 +18,11 @@ const MatrixPrinter = @import("io/matrix_printer.zig").MatrixPrinter;
 const matrix = @import("domain/matrix.zig");
 const color = @import("domain/color.zig");
 
+var start_timestamp = std.atomic.Value(i64).init(0);
+
 var pause = std.atomic.Value(u8).init(0);
+var pause_timestamp = std.atomic.Value(i64).init(0);
+
 var exit = std.atomic.Value(u8).init(0);
 var reload = std.atomic.Value(u8).init(0);
 
@@ -50,6 +56,8 @@ pub fn main() !void {
         persistentAllocator.allocator(),
         &printer,
     );
+
+    start_timestamp.store(config.start_ms, AtomicOrder.release);
 
     try run(
         &persistentAllocator,
@@ -92,8 +100,8 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
     var input_thread = try std.Thread.spawn(.{}, runInputLoop, .{});
     defer input_thread.join();
 
-    while (exit.load(std.builtin.AtomicOrder.acquire) == 0) {
-        _ = reload.fetchXor(1, std.builtin.AtomicOrder.acq_rel);
+    while (exit.load(AtomicOrder.acquire) == 0) {
+        _ = reload.fetchXor(1, AtomicOrder.acq_rel);
 
         const winsize = try console.winSize();
 
@@ -125,7 +133,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
         try printer.print(console.CLEAN_CONSOLE);
 
-        while (exit.load(std.builtin.AtomicOrder.acquire) == 0 and reload.load(std.builtin.AtomicOrder.acquire) == 0) {
+        while (exit.load(AtomicOrder.acquire) == 0 and reload.load(AtomicOrder.acquire) == 0) {
             try printer.print(console.RESET_CURSOR);
 
             if (config.debug) {
@@ -138,7 +146,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
                 );
             }
 
-            if (pause.load(std.builtin.AtomicOrder.acquire) == 0) {
+            if (pause.load(AtomicOrder.acquire) == 0) {
                 try mtrx_printer.print(&mtrx);
                 try mtrx.next();
             }
@@ -162,19 +170,23 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 fn runInputLoop() !void {
     const stdin = std.fs.File.stdin();
 
-    while (exit.load(std.builtin.AtomicOrder.acquire) == 0) {
+    while (exit.load(AtomicOrder.acquire) == 0) {
         var buf: [1]u8 = undefined;
         _ = try stdin.read(&buf);
 
         switch (buf[0]) {
             'p', 'P' => {
-                _ = pause.fetchXor(1, std.builtin.AtomicOrder.acq_rel);
+                if (pause.load(AtomicOrder.acquire) == 0) {
+                    _ = pause_timestamp.store(std.time.milliTimestamp(), AtomicOrder.release);
+                }
+                _ = pause.fetchXor(1, AtomicOrder.acq_rel);
             },
             'r', 'R' => {
-                _ = reload.fetchXor(1, std.builtin.AtomicOrder.acq_rel);
+                _ = reload.fetchXor(1, AtomicOrder.acq_rel);
+                _ = start_timestamp.store(std.time.milliTimestamp(), AtomicOrder.release);
             },
             'q', 'Q', console.CTRL_C => {
-                _ = exit.fetchXor(1, std.builtin.AtomicOrder.acq_rel);
+                _ = exit.fetchXor(1, AtomicOrder.acq_rel);
             },
             else => {},
         }
@@ -194,8 +206,12 @@ pub fn print_debug(
     const rows = mtrx.rows();
     const fixedArea = rows * cols;
 
-    const end_ms = std.time.milliTimestamp();
-    const time = try utils.millisecondsToTime(scratch, end_ms - config.start_ms, null);
+    var end_ms = std.time.milliTimestamp();
+    if (pause.load(AtomicOrder.acquire) == 1) {
+        end_ms = pause_timestamp.raw;
+    }
+
+    const time = try utils.millisecondsToTime(scratch, end_ms - start_timestamp.raw, null);
     defer scratch.free(time);
 
     var col = @tagName(config.color);
@@ -204,7 +220,7 @@ pub fn print_debug(
     }
 
     var paused = false;
-    if (pause.load(std.builtin.AtomicOrder.acquire) == 1) {
+    if (pause.load(AtomicOrder.acquire) == 1) {
         paused = true;
     }
 
@@ -248,7 +264,7 @@ pub fn print_debug(
 pub fn print_controls(
     printer: *Printer,
 ) !void {
-    try printer.printf("\nPause: {s} | Restart: {s} | Exit: {s}", .{ 
+    try printer.printf("\nPause: {s} | Restart: {s} | Exit: {s}", .{
         "p",
         "r",
         "q",
