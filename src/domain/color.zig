@@ -104,9 +104,9 @@ pub const ColorManager = struct {
         }
 
         if (self.lcg.float() < sel_prov) {
-            const idx = self.lcg.randInRange(0, @intCast(colors.len - 1));
-            return colors[idx];
+            return self.select(colors);
         }
+        
         return self.mix(colors);
     }
 
@@ -127,6 +127,11 @@ pub const ColorManager = struct {
             @intCast(g / n),
             @intCast(b / n),
         };
+    }
+
+    pub fn select(self: *@This(), colors: []const [3]u8) [3]u8 {
+        const idx = self.lcg.randInRange(0, @intCast(colors.len - 1));
+        return colors[idx];
     }
 
     pub fn free(self: *@This()) void {
