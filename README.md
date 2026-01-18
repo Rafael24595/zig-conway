@@ -55,6 +55,7 @@ The simulation adapts automatically to the size of your terminal window.
 | `-h`, `--help` | Show the help message | — | — |
 | `-v`, `--version` | Show project's version | — | — |
 | `-d` | Enable debug mode | Off | — |
+| `-hc` | Show the controls map | Off | — |
 | `-s` | Random seed | Current timestamp in ms | Any unsigned integer |
 | `-ms` | Frame delay in milliseconds | 50 | Any unsigned integer |
 | `-l` | Initial alive probability (%) | 0.3 | 0 - 1 |
@@ -151,13 +152,23 @@ When enabled (-d), the program will print additional runtime information:
 
 ---
 
-## Signal Handling
+## Interactive Controls
 
-- Windows: Uses SetConsoleCtrlHandler for intercepting CTRL+C.
-- Unix/Linux: Captures SIGINT (Ctrl+C).
-- Both ensure:
-  - Cleaning the console
-  - Showing the cursor again
-  - Graceful shutdown
+The simulation supports real-time key input. This allows you to interactively pause, reload, or exit the simulation while it is running.
+
+| Key | Action |
+| --- | ------ |
+| `p`, `Space` | Toggle pause/resume. When paused, the simulation stops updating the matrix but the display remains visible. Pressing again resumes the simulation. |
+| `r`, `Backspace` | Reload the current matrix. **Only the matrix is reset**; random components such as the LCG or color generator are not reinitialized. Useful to refresh the simulation state without affecting the random sequence. |
+| `+` | Increases the current sleep time by 10 ms, up to a maximum of 3000 ms (3 seconds). |
+| `-` | Decreases the current sleep time by 10 ms, down to a minimum of 0 ms. |
+| `q`, `CTRL+C` | Exit the simulation cleanly. |
+
+### Notes
+
+- Input is handled asynchronously in a separate thread, so the simulation continues rendering frames even while waiting for a keypress.
+- Pause, reload, and exit are implemented using atomic flags, ensuring safe concurrent access between the input thread and the render loop.
+- Works on Windows, Linux, and macOS, with platform-specific raw mode setup to ensure immediate key detection.
+
 
 ---

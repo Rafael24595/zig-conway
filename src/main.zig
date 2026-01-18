@@ -1,6 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+const AtomicOrder = std.builtin.AtomicOrder;
+
 const build = @import("build.zig.zon");
 
 const configuration = @import("configuration/configuration.zig");
@@ -16,11 +18,25 @@ const MatrixPrinter = @import("io/matrix_printer.zig").MatrixPrinter;
 const matrix = @import("domain/matrix.zig");
 const color = @import("domain/color.zig");
 
-var exit_requested: bool = false;
+var start_timestamp = std.atomic.Value(i64).init(0);
+
+var pause = std.atomic.Value(u8).init(0);
+var pause_timestamp = std.atomic.Value(i64).init(0);
+
+var speed_ms = std.atomic.Value(u64).init(0);
+
+var exit = std.atomic.Value(u8).init(0);
+var reload = std.atomic.Value(u8).init(0);
+
+var mutex: std.Thread.Mutex = .{};
+var cond: std.Thread.Condition = .{};
 
 pub fn main() !void {
     try console.enableANSI();
     try console.enableUTF8();
+    try console.enableRawMode();
+
+    defer console.disableRawMode();
 
     var basePersistentAllocator = std.heap.page_allocator;
     var persistentAllocator = AllocatorTracer.init(&basePersistentAllocator);
@@ -46,6 +62,9 @@ pub fn main() !void {
         &printer,
     );
 
+    start_timestamp.store(config.start_ms, AtomicOrder.release);
+    speed_ms.store(config.milliseconds, AtomicOrder.release);
+
     try run(
         &persistentAllocator,
         &scratchAllocator,
@@ -55,8 +74,6 @@ pub fn main() !void {
 }
 
 pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTracer, config: *const configuration.Configuration, printer: *Printer) !void {
-    try defineSignalHandlers();
-
     var persistent = persistentAllocator.allocator();
 
     var lcg = MiniLCG.init(config.seed);
@@ -86,13 +103,21 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
     defer printer.prints(console.SHOW_CURSOR);
     defer printer.prints(console.RESET_CURSOR);
 
-    while (!exit_requested) {
+    var input_thread = try std.Thread.spawn(.{}, runInputLoop, .{});
+    defer input_thread.join();
+
+    while (exit.load(AtomicOrder.acquire) == 0) {
+        _ = reload.fetchXor(1, AtomicOrder.acq_rel);
+
         const winsize = try console.winSize();
 
-        // Tested on Windows CMD.
         var space: usize = 0;
         if (config.debug) {
             space += 4;
+        }
+
+        if (config.controls) {
+            space += 1;
         }
 
         const area = winsize.cols * winsize.rows;
@@ -114,9 +139,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
         try printer.print(console.CLEAN_CONSOLE);
 
-        var persistentBytes = persistentAllocator.bytes();
-        var scratchBytes = scratchAllocator.bytes();
-        while (!exit_requested) {
+        while (exit.load(AtomicOrder.acquire) == 0 and reload.load(AtomicOrder.acquire) == 0) {
             try printer.print(console.RESET_CURSOR);
 
             if (config.debug) {
@@ -130,12 +153,21 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
             }
 
             try mtrx_printer.print(&mtrx);
-            try mtrx.next();
 
-            std.Thread.sleep(config.milliseconds * std.time.ns_per_ms);
+            if (pause.load(AtomicOrder.acquire) == 0) {
+                try mtrx.next();
+            }
 
-            persistentBytes = persistentAllocator.bytes();
-            scratchBytes = scratchAllocator.bytes();
+            if (config.controls) {
+                try print_controls(printer);
+            }
+
+            mutex.lock();
+            _ = cond.timedWait(&mutex, speed_ms.raw * std.time.ns_per_ms) catch |err| switch (err) {
+                error.Timeout => true,
+                else => return err,
+            };
+            mutex.unlock();
 
             printer.reset();
 
@@ -143,6 +175,44 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
             if (area != newWinsize.cols * newWinsize.rows) {
                 break;
             }
+        }
+    }
+}
+
+fn runInputLoop() !void {
+    const stdin = std.fs.File.stdin();
+
+    while (exit.load(AtomicOrder.acquire) == 0) {
+        var buf: [1]u8 = undefined;
+        _ = try stdin.read(&buf);
+
+        switch (buf[0]) {
+            'p', 'P', console.SPACE => {
+                if (pause.load(AtomicOrder.acquire) == 0) {
+                    _ = pause_timestamp.store(std.time.milliTimestamp(), AtomicOrder.release);
+                }
+                _ = pause.fetchXor(1, AtomicOrder.acq_rel);
+            },
+            'r', 'R', console.BACKSPACE, console.DEL => {
+                _ = reload.fetchXor(1, AtomicOrder.acq_rel);
+                _ = start_timestamp.store(std.time.milliTimestamp(), AtomicOrder.release);
+                _ = cond.signal();
+            },
+            '+' => {
+                const min = @min(1000 * 3, speed_ms.raw + 10);
+                _ = speed_ms.store(min, AtomicOrder.release);
+                _ = cond.signal();
+            },
+            '-' => {
+                const max = speed_ms.raw -| 10;
+                _ = speed_ms.store(max, AtomicOrder.release);
+                _ = cond.signal();
+            },
+            'q', 'Q', console.CTRL_C => {
+                _ = exit.fetchXor(1, AtomicOrder.acq_rel);
+                _ = cond.signal();
+            },
+            else => {},
         }
     }
 }
@@ -160,13 +230,22 @@ pub fn print_debug(
     const rows = mtrx.rows();
     const fixedArea = rows * cols;
 
-    const end_ms = std.time.milliTimestamp();
-    const time = try utils.millisecondsToTime(scratch, end_ms - config.start_ms, null);
+    var end_ms = std.time.milliTimestamp();
+    if (pause.load(AtomicOrder.acquire) == 1) {
+        end_ms = pause_timestamp.raw;
+    }
+
+    const time = try utils.millisecondsToTime(scratch, end_ms - start_timestamp.raw, null);
     defer scratch.free(time);
 
     var col = @tagName(config.color);
     if (config.inheritance) {
         col = "*Inheritance";
+    }
+
+    var paused = false;
+    if (pause.load(AtomicOrder.acquire) == 1) {
+        paused = true;
     }
 
     var mut: []const u8 = "disabled";
@@ -182,12 +261,13 @@ pub fn print_debug(
         build.version,
     });
 
-    try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes\n", .{
+    try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes | Paused {any} \n", .{
         persistentAllocator.bytes(),
         scratchAllocator.bytes(),
+        paused,
     });
 
-    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Mode: {s} | Color: {s}\n", .{
+    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Mode: {s} | Color: {s} \n", .{
         config.seed,
         fixedArea,
         cols,
@@ -197,7 +277,7 @@ pub fn print_debug(
     });
 
     try printer.printf("Speed: {d}ms | Probability: {d}% | Time: {s} | Population: {d} | Mutation: {s} \n", .{
-        config.milliseconds,
+        speed_ms.raw,
         config.alive_probability,
         time,
         mtrx.alive_population(),
@@ -205,30 +285,14 @@ pub fn print_debug(
     });
 }
 
-pub fn defineSignalHandlers() !void {
-    if (builtin.os.tag == .windows) {
-        if (std.os.windows.kernel32.SetConsoleCtrlHandler(winCtrlHandler, 1) == 0) {
-            return error.FailedToSetCtrlHandler;
-        }
-        return;
-    }
-
-    const action = std.posix.Sigaction{
-        .handler = .{ .handler = unixSigintHandler },
-        .mask = undefined,
-        .flags = 0,
-    };
-
-    _ = std.posix.sigaction(std.posix.SIG.INT, &action, null);
-}
-
-fn winCtrlHandler(ctrl_type: std.os.windows.DWORD) callconv(.c) std.os.windows.BOOL {
-    _ = ctrl_type;
-    exit_requested = true;
-    return 1;
-}
-
-fn unixSigintHandler(sig_num: i32) callconv(.c) void {
-    _ = sig_num;
-    exit_requested = true;
+pub fn print_controls(
+    printer: *Printer,
+) !void {
+    try printer.printf("\nPause: [{s}] | Restart: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Exit: [{s}]", .{
+        "p, space",
+        "r, backspace",
+        "+",
+        "-",
+        "q, ctrl+c",
+    });
 }

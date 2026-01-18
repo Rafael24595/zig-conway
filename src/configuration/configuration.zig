@@ -11,6 +11,8 @@ const formatter = @import("../io/formatter.zig");
 
 pub const Configuration = struct {
     debug: bool = false,
+    controls: bool = false,
+
     seed: u64 = 0,
 
     start_ms: i64 = 0,
@@ -44,6 +46,7 @@ pub const Configuration = struct {
                     \\  -h, --help        Show this help message
                     \\  -v, --version     Show project's version
                     \\  -d                Enable debug mode (default: off)
+                    \\  -hc               Show the controls map (default: off)
                     \\  -s  <number>      Random seed (default: current time in ms)
                     \\  -ms <number>      Frame delay in ms (default: {d})
                     \\  -l  <number>      Alive probability (default: {d})
@@ -77,6 +80,11 @@ pub const Configuration = struct {
                 continue;
             }
 
+            if (std.mem.eql(u8, arg, "-hc")) {
+                config.controls = true;
+                continue;
+            }
+
             if (std.mem.eql(u8, arg, "-s")) {
                 if (i + 1 >= args.len) {
                     try printer.print("Missing argument for -s (seed)\n");
@@ -100,10 +108,13 @@ pub const Configuration = struct {
                 }
 
                 const value = args[i + 1];
-                config.milliseconds = std.fmt.parseInt(u64, value, 10) catch {
+                const ms = std.fmt.parseInt(u64, value, 10) catch {
                     try printer.printf("Invalid milliseconds value: {s}\n", .{value});
                     std.process.exit(1);
                 };
+
+                config.milliseconds = @min(1000 * 3, ms);
+
                 i += 1;
 
                 continue;
