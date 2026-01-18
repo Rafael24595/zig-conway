@@ -54,9 +54,11 @@ fn enableRawModePosix() !void {
     var tio = try std.posix.tcgetattr(fd);
     original_termios = tio;
 
-    tio.lflag &= ~(std.posix.ICANON | std.posix.ECHO);
-    tio.cc[std.posix.V.MIN] = 0;
-    tio.cc[std.posix.V.TIME] = 1;
+    tio.lflag.ICANON = false;
+    tio.lflag.ECHO = false;
+
+    tio.cc[@intFromEnum(std.posix.V.MIN)] = 0;
+    tio.cc[@intFromEnum(std.posix.V.TIME)] = 1;
 
     try std.posix.tcsetattr(fd, .FLUSH, tio);
 }
@@ -67,7 +69,7 @@ fn disableRawModePosix() void {
             std.posix.STDIN_FILENO,
             .FLUSH,
             tio,
-        );
+        ) catch {};
     }
 }
 
