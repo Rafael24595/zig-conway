@@ -23,6 +23,8 @@ var start_timestamp = std.atomic.Value(i64).init(0);
 var pause = std.atomic.Value(u8).init(0);
 var pause_timestamp = std.atomic.Value(i64).init(0);
 
+var speed_ms = std.atomic.Value(u64).init(0);
+
 var exit = std.atomic.Value(u8).init(0);
 var reload = std.atomic.Value(u8).init(0);
 
@@ -58,6 +60,7 @@ pub fn main() !void {
     );
 
     start_timestamp.store(config.start_ms, AtomicOrder.release);
+    speed_ms.store(config.milliseconds, AtomicOrder.release);
 
     try run(
         &persistentAllocator,
@@ -146,8 +149,9 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
                 );
             }
 
+            try mtrx_printer.print(&mtrx);
+
             if (pause.load(AtomicOrder.acquire) == 0) {
-                try mtrx_printer.print(&mtrx);
                 try mtrx.next();
             }
 
@@ -155,7 +159,8 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
                 try print_controls(printer);
             }
 
-            std.Thread.sleep(config.milliseconds * std.time.ns_per_ms);
+            // TODO: Improve using thread-safe Condition and Mutex.
+            std.Thread.sleep(speed_ms.raw * std.time.ns_per_ms);
 
             printer.reset();
 
@@ -175,15 +180,23 @@ fn runInputLoop() !void {
         _ = try stdin.read(&buf);
 
         switch (buf[0]) {
-            'p', 'P' => {
+            'p', 'P', console.SPACE => {
                 if (pause.load(AtomicOrder.acquire) == 0) {
                     _ = pause_timestamp.store(std.time.milliTimestamp(), AtomicOrder.release);
                 }
                 _ = pause.fetchXor(1, AtomicOrder.acq_rel);
             },
-            'r', 'R' => {
+            'r', 'R', console.BACKSPACE, console.DEL => {
                 _ = reload.fetchXor(1, AtomicOrder.acq_rel);
                 _ = start_timestamp.store(std.time.milliTimestamp(), AtomicOrder.release);
+            },
+            '+' => {
+                const min = @min(1000 * 3, speed_ms.raw + 10);
+                _ = speed_ms.store(min, AtomicOrder.release);
+            },
+            '-' => {
+                const max = speed_ms.raw -| 10;
+                _ = speed_ms.store(max, AtomicOrder.release);
             },
             'q', 'Q', console.CTRL_C => {
                 _ = exit.fetchXor(1, AtomicOrder.acq_rel);
@@ -253,7 +266,7 @@ pub fn print_debug(
     });
 
     try printer.printf("Speed: {d}ms | Probability: {d}% | Time: {s} | Population: {d} | Mutation: {s} \n", .{
-        config.milliseconds,
+        speed_ms.raw,
         config.alive_probability,
         time,
         mtrx.alive_population(),
@@ -264,9 +277,11 @@ pub fn print_debug(
 pub fn print_controls(
     printer: *Printer,
 ) !void {
-    try printer.printf("\nPause: {s} | Restart: {s} | Exit: {s}", .{
-        "p",
-        "r",
-        "q",
+    try printer.printf("\nPause: [{s}] | Restart: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Exit: [{s}]", .{
+        "p, space",
+        "r, backspace",
+        "+",
+        "-",
+        "q, ctrl+c",
     });
 }

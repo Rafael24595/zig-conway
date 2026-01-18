@@ -14,7 +14,11 @@ pub const COLOR_WRAPPER_BYTES = 25;
 pub const COLOR_WRAPPER_PREFIX = "\x1b[38;2;{d};{d};{d}m";
 pub const COLOR_WRAPPER_SUFIX = "\x1b[0m";
 
-pub const CTRL_C: u8 =  3;
+pub const CTRL_C: u8 = 3;
+
+pub const SPACE: u8 = 0x20;
+pub const BACKSPACE: u8 = 0x08;
+pub const DEL: u8 = 0x7F;
 
 const ENABLE_PROCESSED_INPUT: win.DWORD = 0x0001;
 const ENABLE_LINE_INPUT: win.DWORD = 0x0002;

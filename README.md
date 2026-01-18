@@ -158,10 +158,11 @@ The simulation supports real-time key input. This allows you to interactively pa
 
 | Key | Action |
 | --- | ------ |
-| `p` | Toggle pause/resume. When paused, the simulation stops updating the matrix but the display remains visible. Pressing again resumes the simulation. |
-| `r` | Reload the current matrix. **Only the matrix is reset**; random components such as the LCG or color generator are not reinitialized. Useful to refresh the simulation state without affecting the random sequence. |
-| `q` | Exit the simulation cleanly. |
-| `CTRL+C` | Also exits the simulation immediately. |
+| `p`, `Space` | Toggle pause/resume. When paused, the simulation stops updating the matrix but the display remains visible. Pressing again resumes the simulation. |
+| `r`, `Backspace` | Reload the current matrix. **Only the matrix is reset**; random components such as the LCG or color generator are not reinitialized. Useful to refresh the simulation state without affecting the random sequence. |
+| `+` | Increases the current sleep time by 10 ms, up to a maximum of 3000 ms (3 seconds). |
+| `-` | Decreases the current sleep time by 10 ms, down to a minimum of 0 ms. |
+| `q`, `CTRL+C` | Exit the simulation cleanly. |
 
 ### Notes
 

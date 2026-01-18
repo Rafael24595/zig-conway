@@ -108,10 +108,13 @@ pub const Configuration = struct {
                 }
 
                 const value = args[i + 1];
-                config.milliseconds = std.fmt.parseInt(u64, value, 10) catch {
+                const ms = std.fmt.parseInt(u64, value, 10) catch {
                     try printer.printf("Invalid milliseconds value: {s}\n", .{value});
                     std.process.exit(1);
                 };
+
+                config.milliseconds = @min(1000 * 3, ms);
+
                 i += 1;
 
                 continue;
