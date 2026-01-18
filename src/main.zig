@@ -28,6 +28,9 @@ var speed_ms = std.atomic.Value(u64).init(0);
 var exit = std.atomic.Value(u8).init(0);
 var reload = std.atomic.Value(u8).init(0);
 
+var mutex: std.Thread.Mutex = .{};
+var cond: std.Thread.Condition = .{};
+
 pub fn main() !void {
     try console.enableANSI();
     try console.enableUTF8();
@@ -159,8 +162,12 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
                 try print_controls(printer);
             }
 
-            // TODO: Improve using thread-safe Condition and Mutex.
-            std.Thread.sleep(speed_ms.raw * std.time.ns_per_ms);
+            mutex.lock();
+            _ = cond.timedWait(&mutex, speed_ms.raw * std.time.ns_per_ms) catch |err| switch (err) {
+                error.Timeout => true,
+                else => return err,
+            };
+            mutex.unlock();
 
             printer.reset();
 
@@ -189,17 +196,21 @@ fn runInputLoop() !void {
             'r', 'R', console.BACKSPACE, console.DEL => {
                 _ = reload.fetchXor(1, AtomicOrder.acq_rel);
                 _ = start_timestamp.store(std.time.milliTimestamp(), AtomicOrder.release);
+                _ = cond.signal();
             },
             '+' => {
                 const min = @min(1000 * 3, speed_ms.raw + 10);
                 _ = speed_ms.store(min, AtomicOrder.release);
+                _ = cond.signal();
             },
             '-' => {
                 const max = speed_ms.raw -| 10;
                 _ = speed_ms.store(max, AtomicOrder.release);
+                _ = cond.signal();
             },
             'q', 'Q', console.CTRL_C => {
                 _ = exit.fetchXor(1, AtomicOrder.acq_rel);
+                _ = cond.signal();
             },
             else => {},
         }
