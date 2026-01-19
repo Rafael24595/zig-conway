@@ -31,9 +31,9 @@ pub fn millisecondsToTime(alloc: std.mem.Allocator, ms: i64, limit: ?TimeUnit) !
             const uAmount: usize = @intCast(amount);
 
             const time = if (std.mem.eql(u8, unit.label, "ms"))
-                try std.fmt.allocPrint(alloc, "{d:0<3}{s} ", .{ uAmount, unit.label })
+                try std.fmt.allocPrint(alloc, "{d:0<3}{s}", .{ uAmount, unit.label })
             else
-                try std.fmt.allocPrint(alloc, "{d:0<1}{s} ", .{ uAmount, unit.label });
+                try std.fmt.allocPrint(alloc, "{d:0<1}{s}", .{ uAmount, unit.label });
 
             defer alloc.free(time);
 

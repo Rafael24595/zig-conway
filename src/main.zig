@@ -122,6 +122,10 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         var space: usize = 0;
         if (config.debug) {
             space += 4;
+            
+            if (config.inheritance) {
+                space += 1;
+            }
         }
 
         if (config.controls) {
@@ -280,7 +284,7 @@ pub fn print_debug(
         paused,
     });
 
-    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Mode: {s} | Color: {s} \n", .{
+    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Symbol mode: {s} | Color: {s} \n", .{
         config.seed,
         fixedArea,
         cols,
@@ -296,6 +300,13 @@ pub fn print_debug(
         mtrx.alive_population(),
         mut,
     });
+
+    if (config.inheritance) {
+        try printer.printf("Inheritance mode: {s} | Inheritance factions: {d} \n", .{
+            @tagName(config.inheritance_mode),
+            config.inheritance_faction,
+        });
+    }
 }
 
 pub fn print_controls(
