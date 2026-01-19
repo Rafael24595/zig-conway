@@ -78,10 +78,18 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
     var lcg = MiniLCG.init(config.seed);
 
+    const meta = color.inheritanceOf(config.inheritance_mode);
+    const table = try color.sample(
+        &persistent,
+        &lcg,
+        config.inheritance_faction,
+        meta.colors,
+    );
+
     var color_manager = try color.ColorManager.init(
         &persistent,
         &lcg,
-        &color.DEFAULT_TABLE,
+        table,
     );
 
     var mtrx_printer = try MatrixPrinter.init(
@@ -188,9 +196,14 @@ fn runInputLoop() !void {
 
         switch (buf[0]) {
             'p', 'P', console.SPACE => {
+                const now = std.time.milliTimestamp();
                 if (pause.load(AtomicOrder.acquire) == 0) {
-                    _ = pause_timestamp.store(std.time.milliTimestamp(), AtomicOrder.release);
+                    _ = pause_timestamp.store(now, AtomicOrder.release);
+                } else {
+                    const diff = now - pause_timestamp.raw;
+                    _ = start_timestamp.store(diff + start_timestamp.raw, AtomicOrder.release);
                 }
+
                 _ = pause.fetchXor(1, AtomicOrder.acq_rel);
             },
             'r', 'R', console.BACKSPACE, console.DEL => {

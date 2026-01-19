@@ -62,8 +62,11 @@ The simulation adapts automatically to the size of your terminal window.
 | `-g` | Mutation generation | -1 | Any unsigned integer (generations before mutating) or less than 0 to disable |
 | `-sm` | Symbol mode | Ascii_L | Ascii_L, Ascii_M, Ascii_S, Block |
 | `-cm` | Color mode | RGB | RGB, ANSI |
-| `-i` | Enable inheritance mode.  Overrides color mode (-c) | Off | — |
-| `-c` | Color | Green | White, Black, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple, Gray, Pink, Brown, Aqua, Navy, Teal, NeonPink, NeonGreen, NeonBlue, NeonYellow, NeonOrange, NeonPurple, NeonCyan, NeonRed |
+| `-i` | Enable inheritance mode. Overrides color mode (-c) | Off | — |
+| `-if` | Inheritance factions (number of distinct colors in inheritance) | 9 | Any positive integer |
+| `-im` | Inheritance mode | Default | Default, Pastel, Neon, Earthy, Cool, Warm, AoE |
+| `-c` | Color | White | White, Black, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple, Gray, Pink, Brown, Aqua, Navy, Teal, NeonPink, NeonGreen, NeonBlue, NeonYellow, NeonOrange, NeonPurple, NeonCyan, NeonRed, Lavender, Lime, Coral, Gold |
+
 
 ##  Mutation / Random Impulse
 
@@ -83,12 +86,35 @@ To prevent static states:
 - Example character sets:
 
 | Mode | Alive Char | Dead Char | Notes |
-| -----| ---------- | --------- | ----- |
-| Ascii_S | `.` | ` ` | Small ASCII |
-| Ascii_M | `*` | ` ` | Medium ASCII |
-| Ascii_L | `#` | ` ` | Large ASCII |
-| Block   | `█` | ` ` | Unicode block, wider |
+| ---- | ---------- | --------- | ----- |
+| Classic | `#` | ` ` | Large ASCII |
+| Treasure | `x` | ` ` | Small cross |
+| Stars | `*` | ` ` | Medium ASCII |
+| Dots | `.` | ` ` | Small dot |
+| Block | `█` | ` ` | Unicode block |
+| Alert | `!` | ` ` | Attention |
+| Donut | `o` | ` ` | Small circle |
+| Twister | `@` | ` ` | Symbolic marker |
+| Dollar | `$` | ` ` | Dollar symbol |
+| Euro | `€` | ` ` | Euro symbol |
+| Crosshair | `¤` | ` ` | Target |
+| Delta | `∆`  | ` ` | Delta |
+| Butterfly | `⌘` | ` ` | Arcane symbol |
+| Target | `◎` | ` ` | Circle |
+| Circle | `◉` | ` ` | Highlighted circle |
 
+## Color Palettes / Inheritance Modes
+
+Several palettes are included for different visual effects. You can also limit the number of colors selected from a palette using the `-if` (Inheritance Factions) option.
+
+| Palette | Description | Example Colors | Notes |
+| ------- | ----------- | -------------- | ----- |
+| Default | Standard colors | White, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple | Full default vibrant palette |
+| Pastel  Soft, light colors | Pink, Aqua, Teal, Lavender, Light Green | Subtle, soft shades |
+| Neon | Bright, glowing colors | NeonRed, NeonGreen, NeonBlue, NeonYellow | High-saturation, luminous colors |
+| Earthy | Natural tones | Brown, Green, Orange, Yellow, Gray | Muted, organic colors |
+| Cool | Cold palette | Blue, Cyan, Teal, Navy, Purple | Chilly, calming palette |
+| Warm | Warm palette | Red, Orange, Yellow, Pink, Gold | Energetic, warm palette |
 
 ---
 
@@ -126,7 +152,7 @@ To prevent static states:
 
 #### Use a specific symbol mode:
 ```sh
-  zig-out/bin/zig-conway -sm Ascii_M
+  zig-out/bin/zig-conway -sm Stars
 ```
 
 #### Use a specific color mode:
@@ -137,6 +163,11 @@ To prevent static states:
 #### Use a specific color:
 ```sh
   zig-out/bin/zig-conway -c NeonPink
+```
+
+#### Use a specific inheritance mode:
+```sh
+  zig-out/bin/zig-conway -im Target
 ```
 
 ---

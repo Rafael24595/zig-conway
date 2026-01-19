@@ -52,7 +52,7 @@ pub const MatrixPrinter = struct {
         const rows = matrix.len;
         const columns = matrix[0].len;
 
-        const char_fmt_len = self.formatter.fmt_bytes() + self.mode_meta.total_char;
+        const char_fmt_len = self.formatter.fmt_bytes() + self.mode_meta.total_bytes;
         const mtrx_fmt_len = rows * columns * char_fmt_len;
         const estimated_size = self.prefix.len + mtrx_fmt_len + self.sufix.len;
 
