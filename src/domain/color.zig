@@ -27,21 +27,13 @@ pub const Color = enum {
     NeonPurple,
     NeonCyan,
     NeonRed,
+    Lavender,
+    Lime,
+    Coral,
+    Gold,
 };
 
-pub const DEFAULT_TABLE = [_]Color{
-    Color.White,
-    Color.Red,
-    Color.Green,
-    Color.Blue,
-    Color.Yellow,
-    Color.Cyan,
-    Color.Magenta,
-    Color.Orange,
-    Color.Purple,
-};
-
-const color_values = [_][3]u8{
+const ColorMap = [_][3]u8{
     .{ 255, 255, 255 }, // White
     .{ 0, 0, 0 }, // Black
     .{ 255, 0, 0 }, // Red
@@ -66,10 +58,147 @@ const color_values = [_][3]u8{
     .{ 191, 0, 255 }, // NeonPurple
     .{ 0, 255, 255 }, // NeonCyan
     .{ 255, 16, 83 }, // NeonRed
+    .{ 230, 230, 250 }, // Lavender
+    .{ 0, 255, 0 }, // Lime
+    .{ 255, 127, 80 }, // Coral
+    .{ 255, 215, 0 }, // Gold
 };
 
 pub fn rgbOf(c: Color) [3]u8 {
-    return color_values[@intFromEnum(c)];
+    return ColorMap[@intFromEnum(c)];
+}
+
+pub const InheritanceMode = enum {
+    Default,
+    Pastel,
+    Neon,
+    Earthy,
+    Cool,
+    Warm,
+    //AoE,
+};
+
+pub const InheritanceMeta = struct {
+    colors: []const Color,
+};
+
+const InheritanceMap = [_]InheritanceMeta{
+    DEFAULT_THEME,
+    PASTEL_THEME,
+    NEON_THEME,
+    EARTHY_THEME,
+    COOL_THEME,
+    WARM_THEME,
+    //AOE_THEME,
+};
+
+pub const DEFAULT_THEME = InheritanceMeta{
+    .colors = &[_]Color{
+        Color.White,
+        Color.Red,
+        Color.Green,
+        Color.Blue,
+        Color.Yellow,
+        Color.Cyan,
+        Color.Magenta,
+        Color.Orange,
+        Color.Purple,
+    },
+};
+
+pub const PASTEL_THEME = InheritanceMeta{
+    .colors = &[_]Color{
+        Color.Lavender,
+        Color.Pink,
+        Color.Coral,
+        Color.Aqua,
+        Color.Yellow,
+        Color.Lime,
+    },
+};
+
+pub const NEON_THEME = InheritanceMeta{
+    .colors = &[_]Color{
+        Color.NeonPink,
+        Color.NeonGreen,
+        Color.NeonBlue,
+        Color.NeonYellow,
+        Color.NeonOrange,
+        Color.NeonPurple,
+        Color.NeonCyan,
+        Color.NeonRed,
+    },
+};
+
+pub const EARTHY_THEME = InheritanceMeta{
+    .colors = &[_]Color{
+        Color.Brown,
+        Color.Gray,
+        Color.Orange,
+        Color.Green,
+        Color.Navy,
+        Color.Teal,
+        Color.Gold,
+    },
+};
+
+pub const COOL_THEME = InheritanceMeta{
+    .colors = &[_]Color{
+        Color.Blue,
+        Color.Cyan,
+        Color.Navy,
+        Color.Teal,
+        Color.Aqua,
+        Color.Lavender,
+    },
+};
+
+pub const WARM_THEME = InheritanceMeta{
+    .colors = &[_]Color{
+        Color.Red,
+        Color.Orange,
+        Color.Yellow,
+        Color.Pink,
+        Color.Coral,
+        Color.Gold,
+    },
+};
+
+pub const AOE_THEME = InheritanceMeta{
+    .colors = &[_]Color{
+        Color.Red,
+        Color.Blue,
+        Color.Green,
+        Color.Yellow,
+        Color.Cyan,
+        Color.Magenta,
+        Color.Orange,
+    },
+};
+
+pub fn inheritanceOf(m: InheritanceMode) InheritanceMeta {
+    return InheritanceMap[@intFromEnum(m)];
+}
+
+pub fn sample(allocator: *std.mem.Allocator, lcg: *MiniLCG, size: usize, base: []const Color) ![]const Color {
+    const count = @min(size, base.len);
+
+    var indexes = try allocator.alloc(usize, base.len);
+    defer allocator.free(indexes);
+
+    for (0..base.len) |i| {
+        indexes[i] = i;
+    }
+
+    lcg.shuffle(usize, indexes);
+
+    var table_rng = try allocator.alloc(Color, count);
+    for (0..count) |i| {
+        const index = indexes[i];
+        table_rng[i] = base[index];
+    }
+
+    return table_rng;
 }
 
 pub const ColorManager = struct {
@@ -106,7 +235,7 @@ pub const ColorManager = struct {
         if (self.lcg.float() < sel_prov) {
             return self.select(colors);
         }
-        
+
         return self.mix(colors);
     }
 

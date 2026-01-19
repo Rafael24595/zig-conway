@@ -1,3 +1,5 @@
+const std = @import("std");
+
 pub const MiniLCG = struct {
     seed: u64 = 1,
 
@@ -12,7 +14,7 @@ pub const MiniLCG = struct {
         return self.seed;
     }
 
-    pub fn randInRange(self: *@This(), min: usize, max: usize) u8 {
+    pub fn randInRange(self: *@This(), min: usize, max: usize) usize {
         var rnd: u64 = self.next();
 
         rnd = ((rnd >> 16) ^ (rnd >> 8)) & 0xFFFF;
@@ -30,5 +32,23 @@ pub const MiniLCG = struct {
         const rnd = self.next() >> 40;
         const rnd32: f32 = @floatFromInt(rnd);
         return rnd32 / (1 << 24);
+    }
+
+    pub fn shuffle(self: *MiniLCG, comptime T: type, data: []T) void {
+        if (data.len < 2) {
+            return;
+        }
+
+        var i: usize = data.len - 1;
+        while (i > 0) : (i -= 1) {
+            const j = self.randInRange(0, i);
+
+            const a = &data[i];
+            const b = &data[j];
+
+            const tmp = a.*;
+            a.* = b.*;
+            b.* = tmp;
+        }
     }
 };
