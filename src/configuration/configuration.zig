@@ -259,7 +259,7 @@ pub const Configuration = struct {
     pub fn format_flags(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) ![]u8 {
         var buffer = try std.ArrayList(u8).initCapacity(allocator, 0);
 
-        try buffer.appendSlice(allocator, "Usage: zig-conway             [options] \n\n");
+        try buffer.appendSlice(allocator, "\nUsage: zig-conway             [options] \n\n");
 
         try buffer.appendSlice(allocator, try format_flag(
             printer,
