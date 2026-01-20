@@ -4,7 +4,7 @@ const Printer = @import("printer.zig").Printer;
 
 const Matrix = @import("../domain/matrix.zig").Matrix;
 
-const mode = @import("../domain/mode.zig");
+const symbol = @import("../domain/symbol.zig");
 const color = @import("../domain/color.zig");
 
 const formatter = @import("formatter.zig");
@@ -18,7 +18,7 @@ pub const MatrixPrinter = struct {
     prefix: []const u8,
     sufix: []const u8,
 
-    mode_meta: mode.SymbolMeta,
+    mode_meta: symbol.SymbolMeta,
 
     pub fn init(
         allocator: *std.mem.Allocator,
@@ -26,7 +26,7 @@ pub const MatrixPrinter = struct {
         col: color.Color,
         fmt_mtrx: formatter.FormatterMatrixUnion,
         fmt_cell: formatter.FormatterCellUnion,
-        mode_code: mode.SymbolMode,
+        mode_code: symbol.Mode,
     ) !@This() {
         const len = fmt_mtrx.prefix().len;
         const buf = try allocator.alloc(u8, len);
@@ -39,7 +39,7 @@ pub const MatrixPrinter = struct {
             .formatter = fmt_cell,
             .prefix = fmt_mtrx.format_prefix(buf, rgb[0], rgb[1], rgb[2]),
             .sufix = fmt_mtrx.sufix(),
-            .mode_meta = mode.metaOf(mode_code),
+            .mode_meta = symbol.metaOf(mode_code),
         };
     }
 

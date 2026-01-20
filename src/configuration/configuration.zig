@@ -3,7 +3,7 @@ const std = @import("std");
 const build = @import("build.zig.zon");
 
 const matrix = @import("../domain/matrix.zig");
-const SymbolMode = @import("../domain/mode.zig").SymbolMode;
+const symbol = @import("../domain/symbol.zig");
 const color = @import("../domain/color.zig");
 
 const Printer = @import("../io/printer.zig").Printer;
@@ -131,7 +131,7 @@ pub const Configuration = struct {
 
     mutation_generation: i16 = -1,
 
-    symbol_mode: SymbolMode = SymbolMode.Classic,
+    symbol_mode: symbol.Mode = symbol.Mode.Classic,
     color_mode: formatter.FormatterCode = formatter.FormatterCode.RGB,
 
     inheritance: bool = false,
@@ -143,7 +143,7 @@ pub const Configuration = struct {
 
     color: color.Color = color.Color.White,
 
-    pub fn init(allocator: std.mem.Allocator, args: [][:0]u8, printer: *Printer) !@This() {
+    pub fn init(allocator: std.mem.Allocator, printer: *Printer, args: [][:0]u8) !@This() {
         defer printer.reset();
 
         var config = Configuration{};
@@ -197,7 +197,7 @@ pub const Configuration = struct {
             }
 
             if (std.mem.eql(u8, arg, FLAG_SYMBOL_MODE.flag_short)) {
-                config.symbol_mode = try config.parseEnum(SymbolMode, printer, args, i, FLAG_SYMBOL_MODE);
+                config.symbol_mode = try config.parseEnum(symbol.Mode, printer, args, i, FLAG_SYMBOL_MODE);
                 i += 1;
                 continue;
             }
@@ -487,5 +487,5 @@ pub const Configuration = struct {
 pub fn fromArgs(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
-    return Configuration.init(allocator, args, printer);
+    return Configuration.init(allocator, printer, args);
 }

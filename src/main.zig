@@ -111,7 +111,12 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
     defer printer.prints(console.SHOW_CURSOR);
     defer printer.prints(console.RESET_CURSOR);
 
-    var input_thread = try std.Thread.spawn(.{}, runInputLoop, .{});
+    var input_thread = try std.Thread.spawn(
+        .{},
+        runInputLoop,
+        .{},
+    );
+
     defer input_thread.join();
 
     while (exit.load(AtomicOrder.acquire) == 0) {
@@ -119,14 +124,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
         const winsize = try console.winSize();
 
-        var space: usize = 0;
-        if (config.debug) {
-            space += 4;
-        }
-
-        if (config.controls) {
-            space += 1;
-        }
+        const space = calculatePadding(config);
 
         const area = winsize.cols * winsize.rows;
 
@@ -185,6 +183,23 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
             }
         }
     }
+}
+
+pub fn calculatePadding(config: *const configuration.Configuration) usize {
+    var space: usize = 0;
+    if (config.debug) {
+        space += 4;
+
+        if (config.inheritance) {
+            space += 1;
+        }
+    }
+
+    if (config.controls) {
+        space += 1;
+    }
+
+    return space;
 }
 
 fn runInputLoop() !void {
@@ -280,7 +295,7 @@ pub fn print_debug(
         paused,
     });
 
-    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Mode: {s} | Color: {s} \n", .{
+    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Symbol mode: {s} | Color: {s} \n", .{
         config.seed,
         fixedArea,
         cols,
@@ -296,6 +311,13 @@ pub fn print_debug(
         mtrx.alive_population(),
         mut,
     });
+
+    if (config.inheritance) {
+        try printer.printf("Inheritance mode: {s} | Inheritance factions: {d} \n", .{
+            @tagName(config.inheritance_mode),
+            config.inheritance_faction,
+        });
+    }
 }
 
 pub fn print_controls(
