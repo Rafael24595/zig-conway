@@ -1,4 +1,4 @@
-pub const SymbolMode = enum {
+pub const Mode = enum {
     Classic,
     Treasure,
     Stars,
@@ -41,6 +41,6 @@ const ModeMap = [_]SymbolMeta{
     .{ .alive_char = "◉", .death_char = " ", .total_bytes = 3 },
 };
 
-pub fn metaOf(m: SymbolMode) SymbolMeta {
+pub fn metaOf(m: Mode) SymbolMeta {
     return ModeMap[@intFromEnum(m)];
 }

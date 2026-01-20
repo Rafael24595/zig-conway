@@ -10,10 +10,6 @@ pub const SHOW_CURSOR = "\x1b[?25h";
 pub const CLEAN_CONSOLE = "\x1B[2J\x1B[H";
 pub const RESET_CURSOR = "\x1b[H";
 
-pub const COLOR_WRAPPER_BYTES = 25;
-pub const COLOR_WRAPPER_PREFIX = "\x1b[38;2;{d};{d};{d}m";
-pub const COLOR_WRAPPER_SUFIX = "\x1b[0m";
-
 pub const CTRL_C: u8 = 3;
 
 pub const SPACE: u8 = 0x20;
