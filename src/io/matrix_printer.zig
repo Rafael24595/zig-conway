@@ -49,8 +49,8 @@ pub const MatrixPrinter = struct {
         }
 
         const matrix = mtrx.matrix().?;
-        const rows = matrix.len;
-        const columns = matrix[0].len;
+        const rows = mtrx.rows();
+        const columns = mtrx.cols();
 
         const char_fmt_len = self.formatter.fmt_bytes() + self.mode_meta.total_bytes;
         const mtrx_fmt_len = rows * columns * char_fmt_len;
