@@ -60,7 +60,7 @@ The simulation adapts automatically to the size of your terminal window.
 | `-ms` | Frame delay in milliseconds | 50 | Any unsigned integer |
 | `-l` | Initial alive probability (%) | 0.3 | 0 - 1 |
 | `-g` | Mutation generation | -1 | Any unsigned integer (generations before mutating) or less than 0 to disable |
-| `-sm` | Symbol mode | Ascii_L | Ascii_L, Ascii_M, Ascii_S, Block |
+| `-sm` | Symbol mode | Classic |Classic, Treasure, Stars, Dots, Block, Alert, Donut, Twister, Dollar, Euro, Crosshair, Delta, Butterfly, Target, Circle |
 | `-cm` | Color mode | RGB | RGB, ANSI |
 | `-i` | Enable inheritance mode. Overrides color mode (-c) | Off | — |
 | `-if` | Inheritance factions (number of distinct colors in inheritance) | 9 | Any positive integer |
