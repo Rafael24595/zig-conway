@@ -75,19 +75,11 @@ const FLAG_MUTATION_GENERATION: Flag = Flag{
     .name = "mutation generation",
 };
 
-const FLAG_SYMBOL_MODE: Flag = Flag{
-    .flag_short = "-sm",
+const FLAG_THEME_SYMBOL: Flag = Flag{
+    .flag_short = "-ts",
     .type = "<enum>",
-    .desc = "Symbol mode",
-    .name = "symbol mode",
-    .aux_desc = "(use \"help\" to list available modes)",
-};
-
-const FLAG_COLOR_MODE: Flag = Flag{
-    .flag_short = "-cm",
-    .type = "<enum>",
-    .desc = "Color mode",
-    .name = "color mode",
+    .desc = "Theme symbol",
+    .name = "Theme symbol",
     .aux_desc = "(use \"help\" to list available modes)",
 };
 
@@ -118,6 +110,14 @@ const FLAG_COLOR: Flag = Flag{
     .aux_desc = "(use \"help\" to list available modes)",
 };
 
+const FLAG_COLOR_MODE: Flag = Flag{
+    .flag_short = "-cm",
+    .type = "<enum>",
+    .desc = "Color mode",
+    .name = "color mode",
+    .aux_desc = "(use \"help\" to list available modes)",
+};
+
 pub const Configuration = struct {
     debug: bool = false,
     controls: bool = false,
@@ -131,12 +131,12 @@ pub const Configuration = struct {
 
     mutation_generation: i16 = -1,
 
-    symbol_mode: symbol.Mode = symbol.Mode.Classic,
+    symbol_mode: symbol.Theme = symbol.Theme.Classic,
     color_mode: formatter.FormatterCode = formatter.FormatterCode.RGB,
 
     inheritance: bool = false,
-    inheritance_mode: color.InheritanceMode = color.InheritanceMode.Default,
-    inheritance_faction: usize = color.inheritanceOf(color.InheritanceMode.Default).colors.len,
+    inheritance_mode: color.Theme = color.Theme.Default,
+    inheritance_faction: usize = color.metaOf(color.Theme.Default).colors.len,
 
     formatter_matrix: formatter.FormatterMatrixUnion = formatter.FormatterMatrixUnion{ .unfo = .{} },
     formatter_cell: formatter.FormatterCellUnion = formatter.FormatterCellUnion{ .unfo = .{} },
@@ -196,14 +196,8 @@ pub const Configuration = struct {
                 continue;
             }
 
-            if (std.mem.eql(u8, arg, FLAG_SYMBOL_MODE.flag_short)) {
-                config.symbol_mode = try config.parseEnum(symbol.Mode, printer, args, i, FLAG_SYMBOL_MODE);
-                i += 1;
-                continue;
-            }
-
-            if (std.mem.eql(u8, arg, FLAG_COLOR_MODE.flag_short)) {
-                config.color_mode = try config.parseEnum(formatter.FormatterCode, printer, args, i, FLAG_COLOR_MODE);
+            if (std.mem.eql(u8, arg, FLAG_THEME_SYMBOL.flag_short)) {
+                config.symbol_mode = try config.parseEnum(symbol.Theme, printer, args, i, FLAG_THEME_SYMBOL);
                 i += 1;
                 continue;
             }
@@ -222,13 +216,19 @@ pub const Configuration = struct {
 
             if (std.mem.eql(u8, arg, FLAG_INHERITANCE_MODE.flag_short)) {
                 config.inheritance = true;
-                config.inheritance_mode = try config.parseEnum(color.InheritanceMode, printer, args, i, FLAG_INHERITANCE_MODE);
+                config.inheritance_mode = try config.parseEnum(color.Theme, printer, args, i, FLAG_INHERITANCE_MODE);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_COLOR.flag_short)) {
                 config.color = try config.parseEnum(color.Color, printer, args, i, FLAG_COLOR);
+                i += 1;
+                continue;
+            }
+
+            if (std.mem.eql(u8, arg, FLAG_COLOR_MODE.flag_short)) {
+                config.color_mode = try config.parseEnum(formatter.FormatterCode, printer, args, i, FLAG_COLOR_MODE);
                 i += 1;
                 continue;
             }
@@ -311,14 +311,8 @@ pub const Configuration = struct {
 
         try buffer.appendSlice(allocator, try format_flag(
             printer,
-            FLAG_SYMBOL_MODE,
+            FLAG_THEME_SYMBOL,
             .{ .str = @tagName(config.symbol_mode) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_COLOR_MODE,
-            .{ .str = @tagName(config.color_mode) },
         ));
 
         try buffer.appendSlice(allocator, try format_flag(
@@ -343,6 +337,12 @@ pub const Configuration = struct {
             printer,
             FLAG_COLOR,
             .{ .str = @tagName(config.color) },
+        ));
+
+        try buffer.appendSlice(allocator, try format_flag(
+            printer,
+            FLAG_COLOR_MODE,
+            .{ .str = @tagName(config.color_mode) },
         ));
 
         return buffer.items;

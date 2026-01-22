@@ -2,14 +2,14 @@ const std = @import("std");
 
 const Printer = @import("printer.zig").Printer;
 
-const Matrix = @import("../domain/matrix.zig").Matrix;
+const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 
 const symbol = @import("../domain/symbol.zig");
 const color = @import("../domain/color.zig");
 
 const formatter = @import("formatter.zig");
 
-pub const MatrixPrinter = struct {
+pub const LinearMatrixPrinter = struct {
     allocator: *std.mem.Allocator,
 
     printer: *Printer,
@@ -18,7 +18,7 @@ pub const MatrixPrinter = struct {
     prefix: []const u8,
     sufix: []const u8,
 
-    mode_meta: symbol.SymbolMeta,
+    mode_meta: symbol.ThemeMeta,
 
     pub fn init(
         allocator: *std.mem.Allocator,
@@ -26,7 +26,7 @@ pub const MatrixPrinter = struct {
         col: color.Color,
         fmt_mtrx: formatter.FormatterMatrixUnion,
         fmt_cell: formatter.FormatterCellUnion,
-        mode_code: symbol.Mode,
+        mode_code: symbol.Theme,
     ) !@This() {
         const len = fmt_mtrx.prefix().len;
         const buf = try allocator.alloc(u8, len);
@@ -43,14 +43,14 @@ pub const MatrixPrinter = struct {
         };
     }
 
-    pub fn print(self: *@This(), mtrx: *Matrix) !void {
-        if (mtrx.matrix() == null or mtrx.matrix().?.len == 0) {
+    pub fn print(self: *@This(), mtrx: *LinearMatrix) !void {
+        if (mtrx.vector() == null or mtrx.vector().?.len == 0) {
             return;
         }
 
-        const matrix = mtrx.matrix().?;
-        const rows = mtrx.rows();
-        const columns = mtrx.cols();
+        const matrix = mtrx.vector().?;
+        const rows = mtrx.rows_len();
+        const columns = mtrx.cols_len();
 
         const char_fmt_len = self.formatter.fmt_bytes() + self.mode_meta.total_bytes;
         const mtrx_fmt_len = rows * columns * char_fmt_len;
@@ -66,12 +66,14 @@ pub const MatrixPrinter = struct {
 
         for (0..rows) |y| {
             for (0..columns) |x| {
+                const cursor = y * columns + x;
+
                 var cell: []const u8 = self.mode_meta.death_char;
-                if (matrix[y][x].status) {
+                if (matrix[cursor].status) {
                     cell = self.mode_meta.alive_char;
                 }
 
-                if (matrix[y][x].color) |c| {
+                if (matrix[cursor].color) |c| {
                     cell = try self.formatter.format(buf, c[0], c[1], c[2], cell);
                 }
 

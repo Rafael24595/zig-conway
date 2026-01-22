@@ -13,7 +13,7 @@ const MiniLCG = @import("commons/mini_lcg.zig").MiniLCG;
 
 const console = @import("io/console.zig");
 const Printer = @import("io/printer.zig").Printer;
-const MatrixPrinter = @import("io/matrix_printer.zig").MatrixPrinter;
+const LinearMatrixPrinter = @import("io/matrix_printer.zig").LinearMatrixPrinter;
 
 const matrix = @import("domain/matrix.zig");
 const color = @import("domain/color.zig");
@@ -78,7 +78,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
     var lcg = MiniLCG.init(config.seed);
 
-    const meta = color.inheritanceOf(config.inheritance_mode);
+    const meta = color.metaOf(config.inheritance_mode);
     const table = try color.sample(
         &persistent,
         &lcg,
@@ -92,7 +92,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         table,
     );
 
-    var mtrx_printer = try MatrixPrinter.init(
+    var mtrx_printer = try LinearMatrixPrinter.init(
         &persistent,
         printer,
         config.color,
@@ -131,7 +131,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         const cols = winsize.cols;
         const rows = winsize.rows - space;
 
-        var mtrx = matrix.Matrix.init(
+        var mtrx = matrix.LinearMatrix.init(
             &persistent,
             &lcg,
             &color_manager,
@@ -250,12 +250,12 @@ pub fn print_debug(
     scratchAllocator: *AllocatorTracer,
     config: *const configuration.Configuration,
     printer: *Printer,
-    mtrx: *matrix.Matrix,
+    mtrx: *matrix.LinearMatrix,
 ) !void {
     var scratch = scratchAllocator.allocator();
 
-    const cols = mtrx.cols();
-    const rows = mtrx.rows();
+    const cols = mtrx.cols_len();
+    const rows = mtrx.rows_len();
     const fixedArea = rows * cols;
 
     var end_ms = std.time.milliTimestamp();
