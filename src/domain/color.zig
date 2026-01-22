@@ -68,7 +68,7 @@ pub fn rgbOf(c: Color) [3]u8 {
     return ColorMap[@intFromEnum(c)];
 }
 
-pub const InheritanceMode = enum {
+pub const Theme = enum {
     Default,
     Pastel,
     Neon,
@@ -78,11 +78,11 @@ pub const InheritanceMode = enum {
     //AoE,
 };
 
-pub const InheritanceMeta = struct {
+pub const ThemeMeta = struct {
     colors: []const Color,
 };
 
-const InheritanceMap = [_]InheritanceMeta{
+const ThemeMap = [_]ThemeMeta{
     DEFAULT_THEME,
     PASTEL_THEME,
     NEON_THEME,
@@ -92,7 +92,7 @@ const InheritanceMap = [_]InheritanceMeta{
     //AOE_THEME,
 };
 
-pub const DEFAULT_THEME = InheritanceMeta{
+pub const DEFAULT_THEME = ThemeMeta{
     .colors = &[_]Color{
         Color.White,
         Color.Red,
@@ -106,7 +106,7 @@ pub const DEFAULT_THEME = InheritanceMeta{
     },
 };
 
-pub const PASTEL_THEME = InheritanceMeta{
+pub const PASTEL_THEME = ThemeMeta{
     .colors = &[_]Color{
         Color.Lavender,
         Color.Pink,
@@ -117,7 +117,7 @@ pub const PASTEL_THEME = InheritanceMeta{
     },
 };
 
-pub const NEON_THEME = InheritanceMeta{
+pub const NEON_THEME = ThemeMeta{
     .colors = &[_]Color{
         Color.NeonPink,
         Color.NeonGreen,
@@ -130,7 +130,7 @@ pub const NEON_THEME = InheritanceMeta{
     },
 };
 
-pub const EARTHY_THEME = InheritanceMeta{
+pub const EARTHY_THEME = ThemeMeta{
     .colors = &[_]Color{
         Color.Brown,
         Color.Gray,
@@ -142,7 +142,7 @@ pub const EARTHY_THEME = InheritanceMeta{
     },
 };
 
-pub const COOL_THEME = InheritanceMeta{
+pub const COOL_THEME = ThemeMeta{
     .colors = &[_]Color{
         Color.Blue,
         Color.Cyan,
@@ -153,7 +153,7 @@ pub const COOL_THEME = InheritanceMeta{
     },
 };
 
-pub const WARM_THEME = InheritanceMeta{
+pub const WARM_THEME = ThemeMeta{
     .colors = &[_]Color{
         Color.Red,
         Color.Orange,
@@ -164,7 +164,7 @@ pub const WARM_THEME = InheritanceMeta{
     },
 };
 
-pub const AOE_THEME = InheritanceMeta{
+pub const AOE_THEME = ThemeMeta{
     .colors = &[_]Color{
         Color.Red,
         Color.Blue,
@@ -176,8 +176,8 @@ pub const AOE_THEME = InheritanceMeta{
     },
 };
 
-pub fn inheritanceOf(m: InheritanceMode) InheritanceMeta {
-    return InheritanceMap[@intFromEnum(m)];
+pub fn metaOf(m: Theme) ThemeMeta {
+    return ThemeMap[@intFromEnum(m)];
 }
 
 pub fn sample(allocator: *std.mem.Allocator, lcg: *MiniLCG, size: usize, base: []const Color) ![]const Color {
