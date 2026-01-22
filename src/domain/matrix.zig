@@ -152,8 +152,10 @@ pub const LinearMatrix = struct {
         self.population = 0;
 
         for (0..self.rows) |y| {
+            const row_start = y * self.cols;
+
             for (0..self.cols) |x| {
-                const cursor = y * self.cols + x;
+                const cursor = row_start + x;
 
                 const data = self.count_parents(y, x);
 
