@@ -207,6 +207,7 @@ pub const LinearMatrix = struct {
                 const cell = mtrx[cursor];
                 if (cell.status) {
                     std.debug.assert(cell.color != null);
+                    
                     parents[count] = cell.color.?;
                     count += 1;
                 }
