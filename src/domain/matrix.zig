@@ -152,8 +152,10 @@ pub const LinearMatrix = struct {
         self.population = 0;
 
         for (0..self.rows) |y| {
+            const row_start = y * self.cols;
+
             for (0..self.cols) |x| {
-                const cursor = y * self.cols + x;
+                const cursor = row_start + x;
 
                 const data = self.count_parents(y, x);
 
@@ -205,6 +207,7 @@ pub const LinearMatrix = struct {
                 const cell = mtrx[cursor];
                 if (cell.status) {
                     std.debug.assert(cell.color != null);
+                    
                     parents[count] = cell.color.?;
                     count += 1;
                 }

@@ -50,10 +50,10 @@ pub const LinearMatrixPrinter = struct {
 
         const matrix = mtrx.vector().?;
         const rows = mtrx.rows_len();
-        const columns = mtrx.cols_len();
+        const cols = mtrx.cols_len();
 
         const char_fmt_len = self.formatter.fmt_bytes() + self.mode_meta.total_bytes;
-        const mtrx_fmt_len = rows * columns * char_fmt_len;
+        const mtrx_fmt_len = rows * cols * char_fmt_len;
         const estimated_size = self.prefix.len + mtrx_fmt_len + self.sufix.len;
 
         var buffer = try std.ArrayList(u8).initCapacity(self.allocator.*, estimated_size);
@@ -65,8 +65,10 @@ pub const LinearMatrixPrinter = struct {
         try buffer.appendSlice(self.allocator.*, self.prefix);
 
         for (0..rows) |y| {
-            for (0..columns) |x| {
-                const cursor = y * columns + x;
+            const row_start = y * cols;
+
+            for (0..cols) |x| {
+                const cursor = row_start + x;
 
                 var cell: []const u8 = self.mode_meta.death_char;
                 if (matrix[cursor].status) {
