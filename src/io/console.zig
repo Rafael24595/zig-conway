@@ -7,8 +7,11 @@ const k32 = win.kernel32;
 pub const HIDE_CURSOR = "\x1b[?25l";
 pub const SHOW_CURSOR = "\x1b[?25h";
 
-pub const CLEAN_CONSOLE = "\x1B[2J\x1B[H";
+pub const CLEAN_CONSOLE = "\x1B[2J";
+pub const CLEAN_HISTORY = "\x1B[3J";
 pub const RESET_CURSOR = "\x1b[H";
+
+pub const CLEAN_ALL = CLEAN_CONSOLE ++ CLEAN_HISTORY ++ RESET_CURSOR;
 
 pub const CTRL_C: u8 = 3;
 
