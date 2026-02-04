@@ -13,11 +13,11 @@ const TypeFormatter = @import("../commons/utils.zig").TypeFormatter;
 
 const Flag = struct {
     flag_short: []const u8,
-    flag_long: ?[]const u8 = undefined,
-    type: ?[]const u8 = undefined,
+    flag_long: ?[]const u8 = null,
+    type: ?[]const u8 = null,
     desc: []const u8,
     name: []const u8,
-    aux_desc: ?[]const u8 = undefined,
+    aux_desc: ?[]const u8 = null,
 };
 
 const FLAG_HELP: Flag = Flag{

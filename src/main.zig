@@ -32,12 +32,6 @@ var mutex: std.Thread.Mutex = .{};
 var cond: std.Thread.Condition = .{};
 
 pub fn main() !void {
-    try console.enableANSI();
-    try console.enableUTF8();
-    try console.enableRawMode();
-
-    defer console.disableRawMode();
-
     var basePersistentAllocator = std.heap.page_allocator;
     var persistentAllocator = AllocatorTracer.init(&basePersistentAllocator);
 
@@ -64,6 +58,12 @@ pub fn main() !void {
 
     start_timestamp.store(config.start_ms, AtomicOrder.release);
     speed_ms.store(config.milliseconds, AtomicOrder.release);
+
+    try console.enableANSI();
+    try console.enableUTF8();
+    try console.enableRawMode();
+
+    defer console.disableRawMode();
 
     try run(
         &persistentAllocator,
