@@ -1,5 +1,4 @@
 const std = @import("std");
-const color = @import("../domain/color.zig");
 
 pub const FormatterCode = enum {
     ANSI,
@@ -117,7 +116,7 @@ fn FormatterMatrix(
             buf: []u8,
             r: u8,
             g: u8,
-            b: u8
+            b: u8,
         ) []const u8 {
             return adapter(buf, prefix_fmt, r, g, b, "");
         }
@@ -204,8 +203,8 @@ fn rgbToAnsi256(r: u8, g: u8, b: u8) u8 {
             return 231;
         }
 
-        const scaled_gray_offset   = (@as(u16, r) - 8) * 24;
-        const gray_index: u8 = @intCast(scaled_gray_offset  / 247);
+        const scaled_gray_offset = (@as(u16, r) - 8) * 24;
+        const gray_index: u8 = @intCast(scaled_gray_offset / 247);
 
         return 232 + gray_index;
     }

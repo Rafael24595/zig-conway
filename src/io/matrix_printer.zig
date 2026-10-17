@@ -1,11 +1,13 @@
 const std = @import("std");
 
-const Printer = @import("printer.zig").Printer;
+const terminal_kit = @import("terminal_kit");
+
+const Printer = terminal_kit.printer.Printer;
+const color = terminal_kit.color;
 
 const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 
 const symbol = @import("../domain/symbol.zig");
-const color = @import("../domain/color.zig");
 
 const formatter = @import("formatter.zig");
 

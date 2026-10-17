@@ -1,6 +1,7 @@
 const std = @import("std");
 
-const MiniLCG = @import("../commons/mini_lcg.zig").MiniLCG;
+const MiniLCG = @import("terminal_kit").mini_lcg.MiniLCG;
+
 const ColorManager = @import("color.zig").ColorManager;
 
 const SearchArea = 1;
@@ -207,7 +208,7 @@ pub const LinearMatrix = struct {
                 const cell = mtrx[cursor];
                 if (cell.status) {
                     std.debug.assert(cell.color != null);
-                    
+
                     parents[count] = cell.color.?;
                     count += 1;
                 }
@@ -263,8 +264,8 @@ pub const LinearMatrix = struct {
         const mutation_count: usize = @intFromFloat(cells * 0.001);
 
         for (0..@max(1, mutation_count)) |_| {
-            const y = self.lcg.randInRange(0, self.rows - 1);
-            const x = self.lcg.randInRange(0, self.cols - 1);
+            const y = self.lcg.rand_in_range(0, self.rows - 1);
+            const x = self.lcg.rand_in_range(0, self.cols - 1);
 
             const cursor = y * self.cols + x;
 

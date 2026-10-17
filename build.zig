@@ -12,11 +12,14 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const dep_terminal_kit = b.dependency("terminal_kit", .{});
+
     build_main(
         b,
         target,
         optimize,
         build_zig_zon,
+        dep_terminal_kit,
     );
 
     build_test(
@@ -24,6 +27,7 @@ pub fn build(b: *std.Build) void {
         target,
         optimize,
         build_zig_zon,
+        dep_terminal_kit,
     );
 }
 
@@ -32,6 +36,7 @@ fn build_main(
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
     build_zig_zon: *std.Build.Module,
+    dep_terminal_kit: *std.Build.Dependency,
 ) void {
     const exe = b.addExecutable(.{
         .name = "zig_conway",
@@ -44,6 +49,7 @@ fn build_main(
     });
 
     add_build_zig_zon(exe.root_module, build_zig_zon);
+    add_terminal_kit(exe.root_module, dep_terminal_kit);
 
     b.installArtifact(exe);
 
@@ -64,6 +70,7 @@ fn build_test(
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
     build_zig_zon: *std.Build.Module,
+    dep_terminal_kit: *std.Build.Dependency,
 ) void {
     const mod = b.createModule(.{
         .root_source_file = b.path("src/test.zig"),
@@ -73,6 +80,7 @@ fn build_test(
     });
 
     add_build_zig_zon(mod, build_zig_zon);
+    add_terminal_kit(mod, dep_terminal_kit);
 
     const tests = b.addTest(.{
         .root_module = mod,
@@ -89,4 +97,14 @@ fn add_build_zig_zon(
     build_zig_zon: *std.Build.Module,
 ) void {
     mod.addImport("build.zig.zon", build_zig_zon);
+}
+
+fn add_terminal_kit(
+    mod: *std.Build.Module,
+    dep_terminal_kit: *std.Build.Dependency,
+) void {
+    mod.addImport(
+        "terminal_kit",
+        dep_terminal_kit.module("zig_terminal_kit"),
+    );
 }

@@ -1,23 +1,26 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const build = @import("build.zig.zon");
+
+const terminal_kit = @import("terminal_kit");
+
+const Printer = terminal_kit.printer.Printer;
+
+const Flag = terminal_kit.configuration.Flag;
+const kit_conf = terminal_kit.configuration;
+
+const kit_color = terminal_kit.color;
 
 const matrix = @import("../domain/matrix.zig");
 const symbol = @import("../domain/symbol.zig");
 const color = @import("../domain/color.zig");
 
-const Printer = @import("../io/printer.zig").Printer;
 const formatter = @import("../io/formatter.zig");
 
-const TypeFormatter = @import("../commons/utils.zig").TypeFormatter;
-
-const Flag = struct {
-    flag_short: []const u8,
-    flag_long: ?[]const u8 = null,
-    type: ?[]const u8 = null,
-    desc: []const u8,
-    name: []const u8,
-    aux_desc: ?[]const u8 = null,
+const frame_pause_ms: u64 = switch (builtin.os.tag) {
+    .windows => 45,
+    else => 50,
 };
 
 const FLAG_HELP: Flag = Flag{
@@ -126,7 +129,7 @@ pub const Configuration = struct {
 
     start_ms: i64 = 0,
 
-    milliseconds: u64 = 50,
+    milliseconds: u64 = frame_pause_ms,
     alive_probability: f32 = 0.3,
 
     mutation_generation: i16 = -1,
@@ -141,7 +144,7 @@ pub const Configuration = struct {
     formatter_matrix: formatter.FormatterMatrixUnion = formatter.FormatterMatrixUnion{ .unfo = .{} },
     formatter_cell: formatter.FormatterCellUnion = formatter.FormatterCellUnion{ .unfo = .{} },
 
-    color: color.Color = color.Color.White,
+    color: kit_color.Color = kit_color.Color.white,
 
     pub fn init(allocator: std.mem.Allocator, printer: *Printer, args: [][:0]u8) !@This() {
         defer printer.reset();
@@ -173,31 +176,31 @@ pub const Configuration = struct {
             }
 
             if (std.mem.eql(u8, arg, FLAG_SEED.flag_short)) {
-                config.seed = try config.parseInt(u64, printer, args, i, FLAG_SEED, null, null);
+                config.seed = try kit_conf.parse_int(u64, printer, args, i, FLAG_SEED, null, null);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_MILLISECONDS.flag_short)) {
-                config.milliseconds = try config.parseInt(u64, printer, args, i, FLAG_MILLISECONDS, null, 1000 * 3);
+                config.milliseconds = try kit_conf.parse_int(u64, printer, args, i, FLAG_MILLISECONDS, null, 1000 * 3);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_ALIVE_PROBABILITY.flag_short)) {
-                config.alive_probability = try config.parseFloat(f32, printer, args, i, FLAG_ALIVE_PROBABILITY, 0, 1);
+                config.alive_probability = try kit_conf.parse_float(f32, printer, args, i, FLAG_ALIVE_PROBABILITY, 0, 1);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_MUTATION_GENERATION.flag_short)) {
-                config.mutation_generation = try config.parseInt(i16, printer, args, i, FLAG_MUTATION_GENERATION, null, null);
+                config.mutation_generation = try kit_conf.parse_int(i16, printer, args, i, FLAG_MUTATION_GENERATION, null, null);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_THEME_SYMBOL.flag_short)) {
-                config.symbol_mode = try config.parseEnum(symbol.Theme, printer, args, i, FLAG_THEME_SYMBOL);
+                config.symbol_mode = try kit_conf.parse_enum(symbol.Theme, printer, args, i, FLAG_THEME_SYMBOL);
                 i += 1;
                 continue;
             }
@@ -209,26 +212,26 @@ pub const Configuration = struct {
 
             if (std.mem.eql(u8, arg, FLAG_INHERITANCE_FACTIONS.flag_short)) {
                 config.inheritance = true;
-                config.inheritance_faction = try config.parseInt(usize, printer, args, i, FLAG_INHERITANCE_FACTIONS, null, null);
+                config.inheritance_faction = try kit_conf.parse_int(usize, printer, args, i, FLAG_INHERITANCE_FACTIONS, null, null);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_INHERITANCE_MODE.flag_short)) {
                 config.inheritance = true;
-                config.inheritance_mode = try config.parseEnum(color.Theme, printer, args, i, FLAG_INHERITANCE_MODE);
+                config.inheritance_mode = try kit_conf.parse_enum(color.Theme, printer, args, i, FLAG_INHERITANCE_MODE);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_COLOR.flag_short)) {
-                config.color = try config.parseEnum(color.Color, printer, args, i, FLAG_COLOR);
+                config.color = try kit_conf.parse_enum(kit_color.Color, printer, args, i, FLAG_COLOR);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_COLOR_MODE.flag_short)) {
-                config.color_mode = try config.parseEnum(formatter.FormatterCode, printer, args, i, FLAG_COLOR_MODE);
+                config.color_mode = try kit_conf.parse_enum(formatter.FormatterCode, printer, args, i, FLAG_COLOR_MODE);
                 i += 1;
                 continue;
             }
@@ -248,132 +251,6 @@ pub const Configuration = struct {
         init_formatters(&config);
 
         return config;
-    }
-
-    pub fn print_help(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) !void {
-        const message = try format_flags(allocator, printer, config);
-        defer allocator.free(message);
-        try printer.print(message);
-    }
-
-    pub fn format_flags(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) ![]u8 {
-        var buffer = try std.ArrayList(u8).initCapacity(allocator, 0);
-
-        try buffer.appendSlice(allocator, "\nUsage: zig-conway             [options] \n\n");
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_HELP,
-            .none,
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_VERSION,
-            .none,
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_DEBUG,
-            .{ .bool = config.debug },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_HELP_CONTROLS,
-            .{ .bool = config.controls },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_SEED,
-            .{ .str = "current time in ms" },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_MILLISECONDS,
-            .{ .int = @intCast(config.milliseconds) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_ALIVE_PROBABILITY,
-            .{ .float = @floatCast(config.alive_probability) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_MUTATION_GENERATION,
-            .{ .int = @intCast(config.mutation_generation) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_THEME_SYMBOL,
-            .{ .str = @tagName(config.symbol_mode) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_INHERITANCE,
-            .{ .bool = config.inheritance },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_INHERITANCE_FACTIONS,
-            .{ .int = @intCast(config.inheritance_faction) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_INHERITANCE_MODE,
-            .{ .str = @tagName(config.inheritance_mode) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_COLOR,
-            .{ .str = @tagName(config.color) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_COLOR_MODE,
-            .{ .str = @tagName(config.color_mode) },
-        ));
-
-        return buffer.items;
-    }
-
-    pub fn format_flag(printer: *Printer, flag: Flag, default: TypeFormatter) ![]u8 {
-        const flag_short = flag.flag_short;
-        const flag_desc = flag.desc;
-
-        var flag_long: []const u8 = "";
-        if (flag.flag_long != null) {
-            flag_long = flag.flag_long.?;
-        }
-
-        var flag_type: []const u8 = "";
-        if (flag.type != null) {
-            flag_type = flag.type.?;
-        }
-
-        var data = try printer.format("  {s:<3} {s:<12}  {s:<8}  {s}", .{ flag_short, flag_long, flag_type, flag_desc });
-
-        if (default != .none) {
-            const d = try default.format(printer);
-            data = try printer.format("{s} (default: {s})", .{ data, d });
-        }
-
-        if (flag.aux_desc != null) {
-            data = try printer.format("{s}\n{s:<32}{s}", .{ data, "", flag.aux_desc.? });
-        }
-
-        return try printer.format("{s} \n", .{data});
     }
 
     fn init_formatters(config: *Configuration) void {
@@ -406,81 +283,102 @@ pub const Configuration = struct {
         return;
     }
 
-    fn parseFloat(_: *@This(), comptime T: type, printer: *Printer, args: [][:0]u8, i: usize, flag: Flag, min: ?T, max: ?T) !T {
-        if (i + 1 >= args.len) {
-            try printer.printf("Missing argument for {s} ({s})\n", .{ flag.flag_short, flag.name });
-            std.process.exit(1);
-        }
-
-        const value = args[i + 1];
-        var result = std.fmt.parseFloat(T, value) catch {
-            try printer.printf("Invalid {s} value: {s}\n", .{ flag.name, value });
-            std.process.exit(1);
-        };
-
-        if (min != null) {
-            result = @max(result, min.?);
-        }
-
-        if (max != null) {
-            result = @min(result, max.?);
-        }
-
-        return result;
+    pub fn print_help(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) !void {
+        const message = try format_flags(allocator, printer, config);
+        defer allocator.free(message);
+        try printer.print(message);
     }
 
-    fn parseInt(_: *@This(), comptime T: type, printer: *Printer, args: [][:0]u8, i: usize, flag: Flag, min: ?T, max: ?T) !T {
-        if (i + 1 >= args.len) {
-            try printer.printf("Missing argument for {s} ({s})\n", .{ flag.flag_short, flag.name });
-            std.process.exit(1);
-        }
+    pub fn format_flags(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) ![]u8 {
+        var buffer = try std.ArrayList(u8).initCapacity(allocator, 0);
 
-        const value = args[i + 1];
-        var result = std.fmt.parseInt(T, value, 10) catch {
-            try printer.printf("Invalid {s} value: {s}\n", .{ flag.name, value });
-            std.process.exit(1);
-        };
+        try buffer.appendSlice(allocator, "\nUsage: zig-conway             [options] \n\n");
 
-        if (min != null) {
-            result = @max(result, min.?);
-        }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_HELP,
+            .none,
+        ));
 
-        if (max != null) {
-            result = @min(result, max.?);
-        }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_VERSION,
+            .none,
+        ));
 
-        return result;
-    }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_DEBUG,
+            .{ .bool = config.debug },
+        ));
 
-    fn parseEnum(self: *@This(), comptime T: type, printer: *Printer, args: [][:0]u8, i: usize, flag: Flag) !T {
-        if (i + 1 >= args.len) {
-            try printer.printf("Missing argument for {s} ({s})\n", .{ flag.flag_short, flag.name });
-            std.process.exit(1);
-        }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_HELP_CONTROLS,
+            .{ .bool = config.controls },
+        ));
 
-        const value = args[i + 1];
-        if (std.mem.eql(u8, value, "help")) {
-            try self.printEnumOptionsWithTitle(T, flag.name, printer);
-            std.process.exit(0);
-        }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_SEED,
+            .{ .str = "current time in ms" },
+        ));
 
-        return std.meta.stringToEnum(T, value) orelse {
-            try printer.printf("Invalid {s}: {s}\n", .{ flag.name, value });
-            try self.printEnumOptions(T, printer);
-            std.process.exit(1);
-        };
-    }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_MILLISECONDS,
+            .{ .int = @intCast(config.milliseconds) },
+        ));
 
-    fn printEnumOptions(self: *@This(), comptime T: type, printer: *Printer) !void {
-        try self.printEnumOptionsWithTitle(T, "Available", printer);
-    }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_ALIVE_PROBABILITY,
+            .{ .float = @floatCast(config.alive_probability) },
+        ));
 
-    fn printEnumOptionsWithTitle(_: *@This(), comptime T: type, title: []const u8, printer: *Printer) !void {
-        const info = @typeInfo(T);
-        try printer.printf("{s} options:\n", .{title});
-        inline for (info.@"enum".fields) |field| {
-            try printer.printf(" - {s}\n", .{field.name});
-        }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_MUTATION_GENERATION,
+            .{ .int = @intCast(config.mutation_generation) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_THEME_SYMBOL,
+            .{ .str = @tagName(config.symbol_mode) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_INHERITANCE,
+            .{ .bool = config.inheritance },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_INHERITANCE_FACTIONS,
+            .{ .int = @intCast(config.inheritance_faction) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_INHERITANCE_MODE,
+            .{ .str = @tagName(config.inheritance_mode) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_COLOR,
+            .{ .str = @tagName(config.color) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_COLOR_MODE,
+            .{ .str = @tagName(config.color_mode) },
+        ));
+
+        return buffer.items;
     }
 };
 
