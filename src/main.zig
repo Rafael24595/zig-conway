@@ -94,17 +94,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         table,
     );
 
-    var mtrx_printer = try LinearMatrixPrinter.init(
-        &persistent,
-        printer,
-        config.color,
-        config.formatter_matrix,
-        config.formatter_cell,
-        config.symbol_mode,
-    );
-
     defer printer.reset();
-    defer mtrx_printer.reset();
 
     try printer.print(console.CLEAN_ALL);
     try printer.print(console.HIDE_CURSOR);
@@ -140,9 +130,21 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
             config.mutation_generation,
         );
 
+        defer mtrx.free();
+
         try mtrx.build(cols, rows);
 
-        defer mtrx.free();
+        var mtrx_printer = try LinearMatrixPrinter.init(
+            &persistent,
+            printer,
+            config.color,
+            config.formatter_matrix,
+            config.formatter_cell,
+            config.symbol_mode,
+            &mtrx,
+        );
+
+        defer mtrx_printer.free();
 
         try printer.print(console.CLEAN_CONSOLE);
 
