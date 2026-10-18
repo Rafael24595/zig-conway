@@ -11,18 +11,11 @@ const RuntimeState = terminal_kit.runtime_state.RuntimeState;
 const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
 const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
 
-const AtomicOrder = std.builtin.AtomicOrder;
-
-const build = @import("build.zig.zon");
-
 const configuration = @import("configuration/configuration.zig");
 
 const debug = @import("app/debug.zig");
 const RenderContext = @import("app/render_context.zig").RenderContext;
 
-const LinearMatrixPrinter = @import("io/matrix_printer.zig").LinearMatrixPrinter;
-
-const matrix = @import("domain/matrix.zig");
 const color = @import("domain/color.zig");
 
 pub fn main() !void {
