@@ -94,6 +94,8 @@ pub fn run(
         config.inheritance_faction,
     );
 
+    defer color_manager.free();
+
     defer printer.reset();
 
     try printer.print(console.CLEAN_ALL);
