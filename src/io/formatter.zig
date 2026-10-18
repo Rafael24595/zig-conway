@@ -6,9 +6,9 @@ pub const FormatterCode = enum {
 };
 
 pub const FormatterMatrixUnion = union(enum) {
-    ansi: FormatterMatrix("\x1b[38;5;{d}m{s}", "\x1b[0m", formatANSI),
-    rgb: FormatterMatrix("\x1b[38;2;{d};{d};{d}m{s}", "\x1b[0m", formatRgb),
-    unfo: FormatterMatrix("", "\x1b[0m", formatUnformatted),
+    ansi: FormatterMatrix("\x1b[38;5;{d}m{s}", "\x1b[0m", format_ansi),
+    rgb: FormatterMatrix("\x1b[38;2;{d};{d};{d}m{s}", "\x1b[0m", format_rgb),
+    unfo: FormatterMatrix("", "\x1b[0m", unformatted),
 
     pub fn fmt_bytes(
         self: @This(),
@@ -56,9 +56,9 @@ pub const FormatterMatrixUnion = union(enum) {
 };
 
 pub const FormatterCellUnion = union(enum) {
-    ansi: FormatterCell("\x1b[38;5;{d}m{s}", formatANSI),
-    rgb: FormatterCell("\x1b[38;2;{d};{d};{d}m{s}", formatRgb),
-    unfo: FormatterCell("\x1b[38;2;{d};{d};{d}m{s}", formatUnformatted),
+    ansi: FormatterCell("\x1b[38;5;{d}m{s}", format_ansi),
+    rgb: FormatterCell("\x1b[38;2;{d};{d};{d}m{s}", format_rgb),
+    unfo: FormatterCell("\x1b[38;2;{d};{d};{d}m{s}", unformatted),
 
     pub fn fmt_bytes(
         self: @This(),
@@ -152,7 +152,7 @@ fn FormatterCell(
     };
 }
 
-fn formatUnformatted(
+fn unformatted(
     _: []u8,
     comptime _: []const u8,
     _: u8,
@@ -163,7 +163,7 @@ fn formatUnformatted(
     return c;
 }
 
-fn formatANSI(
+fn format_ansi(
     buffer: []u8,
     comptime fmt: []const u8,
     r: u8,
@@ -171,7 +171,7 @@ fn formatANSI(
     b: u8,
     c: []const u8,
 ) []const u8 {
-    const a = rgbToAnsi256(r, g, b);
+    const a = rgb_to_ansi256(r, g, b);
     return std.fmt.bufPrint(
         buffer,
         fmt,
@@ -179,7 +179,7 @@ fn formatANSI(
     ) catch unreachable;
 }
 
-fn formatRgb(
+fn format_rgb(
     buffer: []u8,
     comptime fmt: []const u8,
     r: u8,
@@ -194,7 +194,7 @@ fn formatRgb(
     ) catch unreachable;
 }
 
-fn rgbToAnsi256(r: u8, g: u8, b: u8) u8 {
+fn rgb_to_ansi256(r: u8, g: u8, b: u8) u8 {
     if (r == g and g == b) {
         if (r < 8) {
             return 16;
