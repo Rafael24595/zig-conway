@@ -195,26 +195,7 @@ pub const ColorManager = struct {
             return self.select(colors);
         }
 
-        return self.mix(colors);
-    }
-
-    pub fn mix(_: *@This(), colors: []const [3]u8) [3]u8 {
-        var r: u32 = 0;
-        var g: u32 = 0;
-        var b: u32 = 0;
-
-        for (colors) |c| {
-            r += c[0];
-            g += c[1];
-            b += c[2];
-        }
-
-        const n = colors.len;
-        return [3]u8{
-            @intCast(r / n),
-            @intCast(g / n),
-            @intCast(b / n),
-        };
+        return mix(colors);
     }
 
     pub fn select(self: *@This(), colors: []const [3]u8) [3]u8 {
@@ -227,3 +208,22 @@ pub const ColorManager = struct {
         self.table = null;
     }
 };
+
+inline fn mix(colors: []const [3]u8) [3]u8 {
+    var r: u32 = 0;
+    var g: u32 = 0;
+    var b: u32 = 0;
+
+    for (colors) |c| {
+        r += c[0];
+        g += c[1];
+        b += c[2];
+    }
+
+    const n = colors.len;
+    return [3]u8{
+        @intCast(r / n),
+        @intCast(g / n),
+        @intCast(b / n),
+    };
+}
