@@ -1,85 +1,26 @@
 const std = @import("std");
 
-const MiniLCG = @import("../commons/mini_lcg.zig").MiniLCG;
+const terminal_kit = @import("terminal_kit");
 
-pub const Color = enum {
-    White,
-    Black,
-    Red,
-    Green,
-    Blue,
-    Yellow,
-    Cyan,
-    Magenta,
-    Orange,
-    Purple,
-    Gray,
-    Pink,
-    Brown,
-    Aqua,
-    Navy,
-    Teal,
-    NeonPink,
-    NeonGreen,
-    NeonBlue,
-    NeonYellow,
-    NeonOrange,
-    NeonPurple,
-    NeonCyan,
-    NeonRed,
-    Lavender,
-    Lime,
-    Coral,
-    Gold,
-};
+const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
 
-const ColorMap = [_][3]u8{
-    .{ 255, 255, 255 }, // White
-    .{ 0, 0, 0 }, // Black
-    .{ 255, 0, 0 }, // Red
-    .{ 0, 255, 0 }, // Green
-    .{ 0, 0, 255 }, // Blue
-    .{ 255, 255, 0 }, // Yellow
-    .{ 0, 255, 255 }, // Cyan
-    .{ 255, 0, 255 }, // Magenta
-    .{ 255, 128, 0 }, // Orange
-    .{ 128, 0, 128 }, // Purple
-    .{ 128, 128, 128 }, // Gray
-    .{ 255, 192, 203 }, // Pink
-    .{ 165, 42, 42 }, // Brown
-    .{ 127, 255, 212 }, // Aqua
-    .{ 0, 0, 128 }, // Navy
-    .{ 0, 128, 128 }, // Teal
-    .{ 255, 0, 144 }, // NeonPink
-    .{ 57, 255, 20 }, // NeonGreen
-    .{ 0, 191, 255 }, // NeonBlue
-    .{ 207, 255, 4 }, // NeonYellow
-    .{ 255, 95, 31 }, // NeonOrange
-    .{ 191, 0, 255 }, // NeonPurple
-    .{ 0, 255, 255 }, // NeonCyan
-    .{ 255, 16, 83 }, // NeonRed
-    .{ 230, 230, 250 }, // Lavender
-    .{ 0, 255, 0 }, // Lime
-    .{ 255, 127, 80 }, // Coral
-    .{ 255, 215, 0 }, // Gold
-};
+const kit_color = terminal_kit.color;
 
-pub fn rgbOf(c: Color) [3]u8 {
-    return ColorMap[@intFromEnum(c)];
-}
-
+/// Available color themes.
 pub const Theme = enum {
-    Default,
-    Pastel,
-    Neon,
-    Earthy,
-    Cool,
-    Warm,
-    //AoE,
+    default,
+    pastel,
+    neon,
+    earthy,
+    cool,
+    warm,
+    //aoe,
 };
 
+/// Stores the color palette associated with a theme.
 pub const ThemeMeta = struct {
-    colors: []const Color,
+    /// Colors available in the palette.
+    colors: []const kit_color.Color,
 };
 
 const ThemeMap = [_]ThemeMeta{
@@ -93,94 +34,103 @@ const ThemeMap = [_]ThemeMeta{
 };
 
 pub const DEFAULT_THEME = ThemeMeta{
-    .colors = &[_]Color{
-        Color.White,
-        Color.Red,
-        Color.Green,
-        Color.Blue,
-        Color.Yellow,
-        Color.Cyan,
-        Color.Magenta,
-        Color.Orange,
-        Color.Purple,
+    .colors = &[_]kit_color.Color{
+        kit_color.Color.white,
+        kit_color.Color.red,
+        kit_color.Color.green,
+        kit_color.Color.blue,
+        kit_color.Color.yellow,
+        kit_color.Color.cyan,
+        kit_color.Color.magenta,
+        kit_color.Color.orange,
+        kit_color.Color.purple,
     },
 };
 
 pub const PASTEL_THEME = ThemeMeta{
-    .colors = &[_]Color{
-        Color.Lavender,
-        Color.Pink,
-        Color.Coral,
-        Color.Aqua,
-        Color.Yellow,
-        Color.Lime,
+    .colors = &[_]kit_color.Color{
+        kit_color.Color.lavender,
+        kit_color.Color.pink,
+        kit_color.Color.coral,
+        kit_color.Color.aqua,
+        kit_color.Color.yellow,
+        kit_color.Color.lime,
     },
 };
 
 pub const NEON_THEME = ThemeMeta{
-    .colors = &[_]Color{
-        Color.NeonPink,
-        Color.NeonGreen,
-        Color.NeonBlue,
-        Color.NeonYellow,
-        Color.NeonOrange,
-        Color.NeonPurple,
-        Color.NeonCyan,
-        Color.NeonRed,
+    .colors = &[_]kit_color.Color{
+        kit_color.Color.neon_pink,
+        kit_color.Color.neon_green,
+        kit_color.Color.neon_blue,
+        kit_color.Color.neon_yellow,
+        kit_color.Color.neon_orange,
+        kit_color.Color.neon_purple,
+        kit_color.Color.neon_cyan,
+        kit_color.Color.neon_red,
     },
 };
 
 pub const EARTHY_THEME = ThemeMeta{
-    .colors = &[_]Color{
-        Color.Brown,
-        Color.Gray,
-        Color.Orange,
-        Color.Green,
-        Color.Navy,
-        Color.Teal,
-        Color.Gold,
+    .colors = &[_]kit_color.Color{
+        kit_color.Color.brown,
+        kit_color.Color.gray,
+        kit_color.Color.orange,
+        kit_color.Color.green,
+        kit_color.Color.navy,
+        kit_color.Color.teal,
+        kit_color.Color.gold,
     },
 };
 
 pub const COOL_THEME = ThemeMeta{
-    .colors = &[_]Color{
-        Color.Blue,
-        Color.Cyan,
-        Color.Navy,
-        Color.Teal,
-        Color.Aqua,
-        Color.Lavender,
+    .colors = &[_]kit_color.Color{
+        kit_color.Color.blue,
+        kit_color.Color.cyan,
+        kit_color.Color.navy,
+        kit_color.Color.teal,
+        kit_color.Color.aqua,
+        kit_color.Color.lavender,
     },
 };
 
 pub const WARM_THEME = ThemeMeta{
-    .colors = &[_]Color{
-        Color.Red,
-        Color.Orange,
-        Color.Yellow,
-        Color.Pink,
-        Color.Coral,
-        Color.Gold,
+    .colors = &[_]kit_color.Color{
+        kit_color.Color.red,
+        kit_color.Color.orange,
+        kit_color.Color.yellow,
+        kit_color.Color.pink,
+        kit_color.Color.coral,
+        kit_color.Color.gold,
     },
 };
 
-pub const AOE_THEME = ThemeMeta{
-    .colors = &[_]Color{
-        Color.Red,
-        Color.Blue,
-        Color.Green,
-        Color.Yellow,
-        Color.Cyan,
-        Color.Magenta,
-        Color.Orange,
-    },
-};
+//pub const AOE_THEME = ThemeMeta{
+//    .colors = &[_]kit_color.Color{
+//        kit_color.Color.red,
+//        kit_color.Color.blue,
+//        kit_color.Color.green,
+//        kit_color.Color.yellow,
+//        kit_color.Color.cyan,
+//        kit_color.Color.magenta,
+//        kit_color.Color.orange,
+//    },
+//};
 
-pub fn metaOf(m: Theme) ThemeMeta {
+/// Returns the color palette associated with the given theme.
+pub fn meta_of(m: Theme) ThemeMeta {
     return ThemeMap[@intFromEnum(m)];
 }
 
-pub fn sample(allocator: *std.mem.Allocator, lcg: *MiniLCG, size: usize, base: []const Color) ![]const Color {
+/// Selects up to `size` unique colors from the provided palette.
+///
+/// Returns an allocated slice containing the selected colors.
+pub fn sample(
+    allocator: std.mem.Allocator,
+    lcg: *MiniLCG,
+    size: usize,
+    base: []const kit_color.Color,
+) ![]const kit_color.Color {
     const count = @min(size, base.len);
 
     var indexes = try allocator.alloc(usize, base.len);
@@ -192,7 +142,7 @@ pub fn sample(allocator: *std.mem.Allocator, lcg: *MiniLCG, size: usize, base: [
 
     lcg.shuffle(usize, indexes);
 
-    var table_rng = try allocator.alloc(Color, count);
+    var table_rng = try allocator.alloc(kit_color.Color, count);
     for (0..count) |i| {
         const index = indexes[i];
         table_rng[i] = base[index];
@@ -201,17 +151,38 @@ pub fn sample(allocator: *std.mem.Allocator, lcg: *MiniLCG, size: usize, base: [
     return table_rng;
 }
 
+/// Manages RGB colors used during matrix generation.
 pub const ColorManager = struct {
-    allocator: *std.mem.Allocator,
+    /// Allocator used for the color table.
+    allocator: std.mem.Allocator,
 
+    /// Random number generator used for color selection.
     lcg: *MiniLCG,
 
+    /// RGB values available for selection.
     table: [][3]u8,
 
-    pub fn init(allocator: *std.mem.Allocator, lcg: *MiniLCG, table: []const Color) !@This() {
+    /// Initializes the color manager from the provided palette.
+    pub fn init(
+        allocator: std.mem.Allocator,
+        lcg: *MiniLCG,
+        theme: Theme,
+        size: usize,
+    ) !@This() {
+        const meta = meta_of(theme);
+
+        const table = try sample(
+            allocator,
+            lcg,
+            size,
+            meta.colors,
+        );
+
+        defer allocator.free(table);
+
         var table_rgb = try allocator.alloc([3]u8, table.len);
         for (table, 0..) |c, i| {
-            table_rgb[i] = rgbOf(c);
+            table_rgb[i] = kit_color.rgb_of(c);
         }
 
         return ColorManager{
@@ -221,50 +192,169 @@ pub const ColorManager = struct {
         };
     }
 
+    /// Releases the resources owned by the color manager.
+    pub fn free(self: *@This()) void {
+        self.allocator.free(self.table);
+        self.table = undefined;
+    }
+
+    /// Returns a randomly selected color from the configured palette.
     pub fn rand_color(self: *@This()) [3]u8 {
         const table = self.table;
-        const idx = self.lcg.randInRange(0, @intCast(table.len - 1));
+        const idx = self.lcg.rand_in_range(0, table.len - 1);
         return table[idx];
     }
 
+    /// Selects a color or mixes the provided colors according to `sel_prov`.
+    ///
+    /// Returns white when the input contains no colors.
     pub fn mix_or_select(self: *@This(), sel_prov: f32, colors: []const [3]u8) [3]u8 {
         if (colors.len == 0) {
-            return rgbOf(Color.White);
+            return kit_color.rgb_of(kit_color.Color.white);
         }
 
         if (self.lcg.float() < sel_prov) {
             return self.select(colors);
         }
 
-        return self.mix(colors);
+        return mix(colors);
     }
 
-    pub fn mix(_: *@This(), colors: []const [3]u8) [3]u8 {
-        var r: u32 = 0;
-        var g: u32 = 0;
-        var b: u32 = 0;
-
-        for (colors) |c| {
-            r += c[0];
-            g += c[1];
-            b += c[2];
-        }
-
-        const n = colors.len;
-        return [3]u8{
-            @intCast(r / n),
-            @intCast(g / n),
-            @intCast(b / n),
-        };
-    }
-
-    pub fn select(self: *@This(), colors: []const [3]u8) [3]u8 {
-        const idx = self.lcg.randInRange(0, @intCast(colors.len - 1));
+    inline fn select(self: *@This(), colors: []const [3]u8) [3]u8 {
+        const idx = self.lcg.rand_in_range(0, colors.len - 1);
         return colors[idx];
     }
-
-    pub fn free(self: *@This()) void {
-        self.allocator.free(self.table);
-        self.table = null;
-    }
 };
+
+inline fn mix(colors: []const [3]u8) [3]u8 {
+    var r: u32 = 0;
+    var g: u32 = 0;
+    var b: u32 = 0;
+
+    for (colors) |c| {
+        r += c[0];
+        g += c[1];
+        b += c[2];
+    }
+
+    const n = colors.len;
+    return [3]u8{
+        @intCast(r / n),
+        @intCast(g / n),
+        @intCast(b / n),
+    };
+}
+
+fn has_no_duplicates(comptime T: type, slice: []const T) bool {
+    for (slice, 0..) |v, i| {
+        for (slice[i + 1 ..]) |w| {
+            if (v == w) return false;
+        }
+    }
+    return true;
+}
+
+fn all_in_base(comptime T: type, slice: []const T, base: []const T) bool {
+    for (slice) |v| {
+        var found = false;
+        for (base) |b| {
+            if (v == b) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) return false;
+    }
+    return true;
+}
+
+test "correct RGB values for known colors" {
+    try std.testing.expectEqual([3]u8{ 255, 0, 0 }, kit_color.rgb_of(kit_color.Color.red));
+    try std.testing.expectEqual([3]u8{ 0, 255, 0 }, kit_color.rgb_of(kit_color.Color.green));
+    try std.testing.expectEqual([3]u8{ 0, 0, 255 }, kit_color.rgb_of(kit_color.Color.blue));
+}
+
+test "sample returns correct size and no duplicates" {
+    var allocator = std.heap.page_allocator;
+    var rng = MiniLCG.init(123);
+
+    const base = [_]kit_color.Color{ .red, .green, .blue, .yellow };
+    const size: usize = 3;
+
+    const result = try sample(allocator, &rng, size, base[0..]);
+    defer allocator.free(result);
+
+    try std.testing.expectEqual(size, result.len);
+    try std.testing.expect(has_no_duplicates(kit_color.Color, result));
+    try std.testing.expect(all_in_base(kit_color.Color, result, base[0..]));
+}
+
+test "sample clamps size to base length" {
+    var allocator = std.heap.page_allocator;
+    var rng = MiniLCG.init(42);
+
+    const base = [_]kit_color.Color{ .red, .green };
+    const size = 5;
+
+    const result = try sample(allocator, &rng, size, base[0..]);
+    defer allocator.free(result);
+
+    try std.testing.expectEqual(base.len, result.len);
+    try std.testing.expect(has_no_duplicates(kit_color.Color, result));
+    try std.testing.expect(all_in_base(kit_color.Color, result, base[0..]));
+}
+
+test "sample is deterministic with same seed" {
+    var allocator = std.heap.page_allocator;
+
+    const base = [_]kit_color.Color{ .red, .green, .blue, .yellow };
+    const size = 3;
+
+    var rng1 = MiniLCG.init(777);
+    var rng2 = MiniLCG.init(777);
+
+    const result1 = try sample(allocator, &rng1, size, base[0..]);
+    const result2 = try sample(allocator, &rng2, size, base[0..]);
+    defer allocator.free(result1);
+    defer allocator.free(result2);
+
+    try std.testing.expectEqualSlices(kit_color.Color, result1, result2);
+}
+
+test "sample handles empty base" {
+    var allocator = std.heap.page_allocator;
+    var rng = MiniLCG.init(999);
+
+    const base: [0]kit_color.Color = undefined;
+    const size = 3;
+
+    const result = try sample(allocator, &rng, size, base[0..]);
+    defer allocator.free(result);
+
+    try std.testing.expectEqual(0, result.len);
+}
+
+test "ColorManager.mix returns the average RGB values" {
+    const colors = [_][3]u8{
+        .{ 100, 50, 0 },
+        .{ 200, 150, 100 },
+    };
+
+    try std.testing.expectEqual(
+        [3]u8{ 150, 100, 50 },
+        mix(&colors),
+    );
+}
+
+test "ColorManager.mix averages multiple colors" {
+    const colors = [_][3]u8{
+        .{ 0, 30, 60 },
+        .{ 30, 60, 90 },
+        .{ 60, 90, 120 },
+    };
+
+    try std.testing.expectEqual(
+        [3]u8{ 30, 60, 90 },
+        mix(&colors),
+    );
+}

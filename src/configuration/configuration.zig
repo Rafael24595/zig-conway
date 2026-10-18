@@ -1,23 +1,26 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const build = @import("build.zig.zon");
+
+const terminal_kit = @import("terminal_kit");
+
+const Printer = terminal_kit.printer.Printer;
+
+const Flag = terminal_kit.configuration.Flag;
+const kit_conf = terminal_kit.configuration;
+
+const kit_color = terminal_kit.color;
 
 const matrix = @import("../domain/matrix.zig");
 const symbol = @import("../domain/symbol.zig");
 const color = @import("../domain/color.zig");
 
-const Printer = @import("../io/printer.zig").Printer;
 const formatter = @import("../io/formatter.zig");
 
-const TypeFormatter = @import("../commons/utils.zig").TypeFormatter;
-
-const Flag = struct {
-    flag_short: []const u8,
-    flag_long: ?[]const u8 = null,
-    type: ?[]const u8 = null,
-    desc: []const u8,
-    name: []const u8,
-    aux_desc: ?[]const u8 = null,
+const frame_pause_ms: u64 = switch (builtin.os.tag) {
+    .windows => 45,
+    else => 50,
 };
 
 const FLAG_HELP: Flag = Flag{
@@ -118,32 +121,59 @@ const FLAG_COLOR_MODE: Flag = Flag{
     .aux_desc = "(use \"help\" to list available modes)",
 };
 
+/// Stores the application settings parsed from command-line arguments,
+/// including rendering options, animation timing, inheritance settings and appearance preferences.
 pub const Configuration = struct {
+    /// Enables diagnostic information during execution.
     debug: bool = false,
+    /// Enables the display of keyboard controls.
     controls: bool = false,
 
+    /// Random seed used to initialize the matrix generation.
+    /// A value of zero causes the seed to be derived from the current timestamp.
     seed: u64 = 0,
 
+    /// Application start timestamp, in milliseconds since the Unix epoch.
     start_ms: i64 = 0,
 
-    milliseconds: u64 = 50,
+    /// Delay between animation frames, in milliseconds.
+    milliseconds: u64 = frame_pause_ms,
+    // Probability of a cell being alive at initialization, expressed as a float between 0 and 1.
     alive_probability: f32 = 0.3,
 
+    /// Maximum generation at which mutations are allowed.
+    /// A negative value disables mutation.
     mutation_generation: i16 = -1,
 
-    symbol_mode: symbol.Theme = symbol.Theme.Classic,
-    color_mode: formatter.FormatterCode = formatter.FormatterCode.RGB,
+    /// Theme used to render matrix symbols.
+    symbol_mode: symbol.Theme = symbol.Theme.classic,
+    /// Color formatting mode used by the output formatters.
+    color_mode: formatter.FormatterCode = formatter.FormatterCode.rgb,
 
+    /// Enables inheritance mode.
     inheritance: bool = false,
-    inheritance_mode: color.Theme = color.Theme.Default,
-    inheritance_faction: usize = color.metaOf(color.Theme.Default).colors.len,
+    /// Theme used to determine inheritance colors.
+    inheritance_mode: color.Theme = color.Theme.default,
+    /// Number of inheritance factions to use.
+    inheritance_faction: usize = color.meta_of(color.Theme.default).colors.len,
 
+    /// Formatter configuration for the matrix output.
     formatter_matrix: formatter.FormatterMatrixUnion = formatter.FormatterMatrixUnion{ .unfo = .{} },
+    /// Formatter configuration for individual cells.
     formatter_cell: formatter.FormatterCellUnion = formatter.FormatterCellUnion{ .unfo = .{} },
 
-    color: color.Color = color.Color.White,
+    /// Default color used for rendering.
+    color: kit_color.Color = kit_color.Color.white,
 
-    pub fn init(allocator: std.mem.Allocator, printer: *Printer, args: [][:0]u8) !@This() {
+    /// Parses command-line arguments and initializes the application settings.
+    ///
+    /// Returns an error if argument parsing or output formatting fails.
+    /// Help and version requests terminate the process after printing their output.
+    pub fn init(
+        allocator: std.mem.Allocator,
+        printer: *Printer,
+        args: [][:0]u8,
+    ) !@This() {
         defer printer.reset();
 
         var config = Configuration{};
@@ -173,31 +203,31 @@ pub const Configuration = struct {
             }
 
             if (std.mem.eql(u8, arg, FLAG_SEED.flag_short)) {
-                config.seed = try config.parseInt(u64, printer, args, i, FLAG_SEED, null, null);
+                config.seed = try kit_conf.parse_int(u64, printer, args, i, FLAG_SEED, null, null);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_MILLISECONDS.flag_short)) {
-                config.milliseconds = try config.parseInt(u64, printer, args, i, FLAG_MILLISECONDS, null, 1000 * 3);
+                config.milliseconds = try kit_conf.parse_int(u64, printer, args, i, FLAG_MILLISECONDS, null, 1000 * 3);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_ALIVE_PROBABILITY.flag_short)) {
-                config.alive_probability = try config.parseFloat(f32, printer, args, i, FLAG_ALIVE_PROBABILITY, 0, 1);
+                config.alive_probability = try kit_conf.parse_float(f32, printer, args, i, FLAG_ALIVE_PROBABILITY, 0, 1);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_MUTATION_GENERATION.flag_short)) {
-                config.mutation_generation = try config.parseInt(i16, printer, args, i, FLAG_MUTATION_GENERATION, null, null);
+                config.mutation_generation = try kit_conf.parse_int(i16, printer, args, i, FLAG_MUTATION_GENERATION, null, null);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_THEME_SYMBOL.flag_short)) {
-                config.symbol_mode = try config.parseEnum(symbol.Theme, printer, args, i, FLAG_THEME_SYMBOL);
+                config.symbol_mode = try kit_conf.parse_enum(symbol.Theme, printer, args, i, FLAG_THEME_SYMBOL);
                 i += 1;
                 continue;
             }
@@ -209,26 +239,26 @@ pub const Configuration = struct {
 
             if (std.mem.eql(u8, arg, FLAG_INHERITANCE_FACTIONS.flag_short)) {
                 config.inheritance = true;
-                config.inheritance_faction = try config.parseInt(usize, printer, args, i, FLAG_INHERITANCE_FACTIONS, null, null);
+                config.inheritance_faction = try kit_conf.parse_int(usize, printer, args, i, FLAG_INHERITANCE_FACTIONS, null, null);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_INHERITANCE_MODE.flag_short)) {
                 config.inheritance = true;
-                config.inheritance_mode = try config.parseEnum(color.Theme, printer, args, i, FLAG_INHERITANCE_MODE);
+                config.inheritance_mode = try kit_conf.parse_enum(color.Theme, printer, args, i, FLAG_INHERITANCE_MODE);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_COLOR.flag_short)) {
-                config.color = try config.parseEnum(color.Color, printer, args, i, FLAG_COLOR);
+                config.color = try kit_conf.parse_enum(kit_color.Color, printer, args, i, FLAG_COLOR);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_COLOR_MODE.flag_short)) {
-                config.color_mode = try config.parseEnum(formatter.FormatterCode, printer, args, i, FLAG_COLOR_MODE);
+                config.color_mode = try kit_conf.parse_enum(formatter.FormatterCode, printer, args, i, FLAG_COLOR_MODE);
                 i += 1;
                 continue;
             }
@@ -250,139 +280,13 @@ pub const Configuration = struct {
         return config;
     }
 
-    pub fn print_help(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) !void {
-        const message = try format_flags(allocator, printer, config);
-        defer allocator.free(message);
-        try printer.print(message);
-    }
-
-    pub fn format_flags(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) ![]u8 {
-        var buffer = try std.ArrayList(u8).initCapacity(allocator, 0);
-
-        try buffer.appendSlice(allocator, "\nUsage: zig-conway             [options] \n\n");
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_HELP,
-            .none,
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_VERSION,
-            .none,
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_DEBUG,
-            .{ .bool = config.debug },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_HELP_CONTROLS,
-            .{ .bool = config.controls },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_SEED,
-            .{ .str = "current time in ms" },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_MILLISECONDS,
-            .{ .int = @intCast(config.milliseconds) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_ALIVE_PROBABILITY,
-            .{ .float = @floatCast(config.alive_probability) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_MUTATION_GENERATION,
-            .{ .int = @intCast(config.mutation_generation) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_THEME_SYMBOL,
-            .{ .str = @tagName(config.symbol_mode) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_INHERITANCE,
-            .{ .bool = config.inheritance },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_INHERITANCE_FACTIONS,
-            .{ .int = @intCast(config.inheritance_faction) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_INHERITANCE_MODE,
-            .{ .str = @tagName(config.inheritance_mode) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_COLOR,
-            .{ .str = @tagName(config.color) },
-        ));
-
-        try buffer.appendSlice(allocator, try format_flag(
-            printer,
-            FLAG_COLOR_MODE,
-            .{ .str = @tagName(config.color_mode) },
-        ));
-
-        return buffer.items;
-    }
-
-    pub fn format_flag(printer: *Printer, flag: Flag, default: TypeFormatter) ![]u8 {
-        const flag_short = flag.flag_short;
-        const flag_desc = flag.desc;
-
-        var flag_long: []const u8 = "";
-        if (flag.flag_long != null) {
-            flag_long = flag.flag_long.?;
-        }
-
-        var flag_type: []const u8 = "";
-        if (flag.type != null) {
-            flag_type = flag.type.?;
-        }
-
-        var data = try printer.format("  {s:<3} {s:<12}  {s:<8}  {s}", .{ flag_short, flag_long, flag_type, flag_desc });
-
-        if (default != .none) {
-            const d = try default.format(printer);
-            data = try printer.format("{s} (default: {s})", .{ data, d });
-        }
-
-        if (flag.aux_desc != null) {
-            data = try printer.format("{s}\n{s:<32}{s}", .{ data, "", flag.aux_desc.? });
-        }
-
-        return try printer.format("{s} \n", .{data});
-    }
-
     fn init_formatters(config: *Configuration) void {
         if (config.inheritance) {
             switch (config.color_mode) {
-                formatter.FormatterCode.ANSI => {
+                formatter.FormatterCode.ansi => {
                     config.formatter_cell = formatter.FormatterCellUnion{ .ansi = .{} };
                 },
-                formatter.FormatterCode.RGB => {
+                formatter.FormatterCode.rgb => {
                     config.formatter_cell = formatter.FormatterCellUnion{ .rgb = .{} };
                 },
             }
@@ -393,10 +297,10 @@ pub const Configuration = struct {
         }
 
         switch (config.color_mode) {
-            formatter.FormatterCode.ANSI => {
+            formatter.FormatterCode.ansi => {
                 config.formatter_matrix = formatter.FormatterMatrixUnion{ .ansi = .{} };
             },
-            formatter.FormatterCode.RGB => {
+            formatter.FormatterCode.rgb => {
                 config.formatter_matrix = formatter.FormatterMatrixUnion{ .rgb = .{} };
             },
         }
@@ -406,86 +310,217 @@ pub const Configuration = struct {
         return;
     }
 
-    fn parseFloat(_: *@This(), comptime T: type, printer: *Printer, args: [][:0]u8, i: usize, flag: Flag, min: ?T, max: ?T) !T {
-        if (i + 1 >= args.len) {
-            try printer.printf("Missing argument for {s} ({s})\n", .{ flag.flag_short, flag.name });
-            std.process.exit(1);
-        }
-
-        const value = args[i + 1];
-        var result = std.fmt.parseFloat(T, value) catch {
-            try printer.printf("Invalid {s} value: {s}\n", .{ flag.name, value });
-            std.process.exit(1);
-        };
-
-        if (min != null) {
-            result = @max(result, min.?);
-        }
-
-        if (max != null) {
-            result = @min(result, max.?);
-        }
-
-        return result;
+    inline fn print_help(
+        allocator: std.mem.Allocator,
+        printer: *Printer,
+        config: Configuration,
+    ) !void {
+        const message = try format_flags(allocator, printer, config);
+        defer allocator.free(message);
+        try printer.print(message);
     }
 
-    fn parseInt(_: *@This(), comptime T: type, printer: *Printer, args: [][:0]u8, i: usize, flag: Flag, min: ?T, max: ?T) !T {
-        if (i + 1 >= args.len) {
-            try printer.printf("Missing argument for {s} ({s})\n", .{ flag.flag_short, flag.name });
-            std.process.exit(1);
-        }
+    inline fn format_flags(
+        allocator: std.mem.Allocator,
+        printer: *Printer,
+        config: Configuration,
+    ) ![]u8 {
+        var buffer = try std.ArrayList(u8).initCapacity(allocator, 0);
 
-        const value = args[i + 1];
-        var result = std.fmt.parseInt(T, value, 10) catch {
-            try printer.printf("Invalid {s} value: {s}\n", .{ flag.name, value });
-            std.process.exit(1);
-        };
+        try buffer.appendSlice(allocator, "\nUsage: zig-conway             [options] \n\n");
 
-        if (min != null) {
-            result = @max(result, min.?);
-        }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_HELP,
+            .none,
+        ));
 
-        if (max != null) {
-            result = @min(result, max.?);
-        }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_VERSION,
+            .none,
+        ));
 
-        return result;
-    }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_DEBUG,
+            .{ .bool = config.debug },
+        ));
 
-    fn parseEnum(self: *@This(), comptime T: type, printer: *Printer, args: [][:0]u8, i: usize, flag: Flag) !T {
-        if (i + 1 >= args.len) {
-            try printer.printf("Missing argument for {s} ({s})\n", .{ flag.flag_short, flag.name });
-            std.process.exit(1);
-        }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_HELP_CONTROLS,
+            .{ .bool = config.controls },
+        ));
 
-        const value = args[i + 1];
-        if (std.mem.eql(u8, value, "help")) {
-            try self.printEnumOptionsWithTitle(T, flag.name, printer);
-            std.process.exit(0);
-        }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_SEED,
+            .{ .str = "current time in ms" },
+        ));
 
-        return std.meta.stringToEnum(T, value) orelse {
-            try printer.printf("Invalid {s}: {s}\n", .{ flag.name, value });
-            try self.printEnumOptions(T, printer);
-            std.process.exit(1);
-        };
-    }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_MILLISECONDS,
+            .{ .int = @intCast(config.milliseconds) },
+        ));
 
-    fn printEnumOptions(self: *@This(), comptime T: type, printer: *Printer) !void {
-        try self.printEnumOptionsWithTitle(T, "Available", printer);
-    }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_ALIVE_PROBABILITY,
+            .{ .float = @floatCast(config.alive_probability) },
+        ));
 
-    fn printEnumOptionsWithTitle(_: *@This(), comptime T: type, title: []const u8, printer: *Printer) !void {
-        const info = @typeInfo(T);
-        try printer.printf("{s} options:\n", .{title});
-        inline for (info.@"enum".fields) |field| {
-            try printer.printf(" - {s}\n", .{field.name});
-        }
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_MUTATION_GENERATION,
+            .{ .int = @intCast(config.mutation_generation) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_THEME_SYMBOL,
+            .{ .str = @tagName(config.symbol_mode) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_INHERITANCE,
+            .{ .bool = config.inheritance },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_INHERITANCE_FACTIONS,
+            .{ .int = @intCast(config.inheritance_faction) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_INHERITANCE_MODE,
+            .{ .str = @tagName(config.inheritance_mode) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_COLOR,
+            .{ .str = @tagName(config.color) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_COLOR_MODE,
+            .{ .str = @tagName(config.color_mode) },
+        ));
+
+        return buffer.items;
     }
 };
 
-pub fn fromArgs(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
+/// Builds the application configuration from the current process arguments.
+///
+/// Allocates the argument list using `allocator` and releases it before
+/// returning. Propagates errors from argument allocation and parsing.
+pub fn from_args(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
     return Configuration.init(allocator, printer, args);
+}
+
+test "Configuration uses the expected default values" {
+    const config = Configuration{};
+
+    try std.testing.expect(!config.debug);
+    try std.testing.expect(!config.controls);
+    try std.testing.expect(!config.inheritance);
+
+    try std.testing.expectEqual(0, config.seed);
+    try std.testing.expectEqual(0, config.start_ms);
+    try std.testing.expectEqual(frame_pause_ms, config.milliseconds);
+
+    try std.testing.expectEqual(0.3, config.alive_probability);
+    try std.testing.expectEqual(-1, config.mutation_generation);
+
+    try std.testing.expectEqual(symbol.Theme.classic, config.symbol_mode);
+    try std.testing.expectEqual(formatter.FormatterCode.rgb, config.color_mode);
+
+    try std.testing.expectEqual(color.Theme.default, config.inheritance_mode);
+    try std.testing.expectEqual(color.meta_of(color.Theme.default).colors.len, config.inheritance_faction);
+
+    try std.testing.expectEqual(kit_color.Color.white, config.color);
+
+    try std.testing.expectEqual(.unfo, std.meta.activeTag(config.formatter_matrix));
+    try std.testing.expectEqual(.unfo, std.meta.activeTag(config.formatter_cell));
+}
+
+test "init_formatters configures ANSI formatters in inheritance mode" {
+    var config = Configuration{
+        .inheritance = true,
+        .color_mode = formatter.FormatterCode.ansi,
+    };
+
+    Configuration.init_formatters(&config);
+
+    try std.testing.expectEqual(
+        .unfo,
+        std.meta.activeTag(config.formatter_matrix),
+    );
+    try std.testing.expectEqual(
+        .ansi,
+        std.meta.activeTag(config.formatter_cell),
+    );
+}
+
+test "init_formatters configures RGB formatters in inheritance mode" {
+    var config = Configuration{
+        .inheritance = true,
+        .color_mode = formatter.FormatterCode.rgb,
+    };
+
+    Configuration.init_formatters(&config);
+
+    try std.testing.expectEqual(
+        .unfo,
+        std.meta.activeTag(config.formatter_matrix),
+    );
+    try std.testing.expectEqual(
+        .rgb,
+        std.meta.activeTag(config.formatter_cell),
+    );
+}
+
+test "init_formatters configures ANSI formatters without inheritance" {
+    var config = Configuration{
+        .inheritance = false,
+        .color_mode = formatter.FormatterCode.ansi,
+    };
+
+    Configuration.init_formatters(&config);
+
+    try std.testing.expectEqual(
+        .ansi,
+        std.meta.activeTag(config.formatter_matrix),
+    );
+    try std.testing.expectEqual(
+        .unfo,
+        std.meta.activeTag(config.formatter_cell),
+    );
+}
+
+test "init_formatters configures RGB formatters without inheritance" {
+    var config = Configuration{
+        .inheritance = false,
+        .color_mode = formatter.FormatterCode.rgb,
+    };
+
+    Configuration.init_formatters(&config);
+
+    try std.testing.expectEqual(
+        .rgb,
+        std.meta.activeTag(config.formatter_matrix),
+    );
+    try std.testing.expectEqual(
+        .unfo,
+        std.meta.activeTag(config.formatter_cell),
+    );
 }

@@ -1,21 +1,23 @@
+/// Defines the available cell symbol themes.
 pub const Theme = enum {
-    Classic,
-    Treasure,
-    Stars,
-    Dots,
-    Block,
-    Alert,
-    Donut,
-    Twister,
-    Dollar,
-    Euro,
-    Crosshair,
-    Delta,
-    Butterfly,
-    Target,
-    Circle,
+    classic,
+    treasure,
+    stars,
+    dots,
+    block,
+    alert,
+    donut,
+    twister,
+    dollar,
+    euro,
+    crosshair,
+    delta,
+    butterfly,
+    tango,
+    circle,
 };
 
+/// Stores the alive and dead symbols and their byte size.
 pub const ThemeMeta = struct {
     alive_char: []const u8,
     death_char: []const u8,
@@ -41,6 +43,7 @@ const ThemeMap = [_]ThemeMeta{
     .{ .alive_char = "◉", .death_char = " ", .total_bytes = 3 },
 };
 
-pub fn metaOf(m: Theme) ThemeMeta {
+/// Returns the symbol metadata for the given theme.
+pub fn meta_of(m: Theme) ThemeMeta {
     return ThemeMap[@intFromEnum(m)];
 }

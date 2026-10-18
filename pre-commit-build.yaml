@@ -1,11 +1,11 @@
-# installer: https://github.com/Rafael24595/bash-hooks/blob/dev/install-pre-commit
+# installer: https://github.com/Rafael24595/bash-hooks/blob/main/bash-hooks
 
 hooks:
   remote:
     repos:
       - id: check-zig-context
         origin: https://github.com/Rafael24595/bash-hooks
-        tag: 0.9.1
+        tag: 0.18.1
         target: zig/sh
         name: check-zig-context.sh
         expect: false
@@ -13,21 +13,18 @@ hooks:
 
       - id: run-check
         origin: https://github.com/Rafael24595/bash-hooks
-        tag: 0.9.1
+        tag: 0.18.1
         target: zig/sh
         name: run-check.sh
 
       - id: run-fmt
         origin: https://github.com/Rafael24595/bash-hooks
-        tag: 0.9.1
+        tag: 0.18.1
         target: zig/sh
         name: run-fmt.sh
-        flags:
-          - apply
 
       - id: run-tests
         origin: https://github.com/Rafael24595/bash-hooks
-        tag: 0.9.1
+        tag: 0.18.1
         target: zig/sh
         name: run-tests.sh
-        disabled: true
