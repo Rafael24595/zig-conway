@@ -2,10 +2,11 @@ const std = @import("std");
 
 const MiniLCG = @import("terminal_kit").mini_lcg.MiniLCG;
 
-const ColorManager = @import("color.zig").ColorManager;
+const mod_color = @import("color.zig");
 
 const SEARCH_AREA = 1;
 
+/// Factor used to determine the dominance of a parent color when mixing colors for a new cell.
 pub const DEFAULT_DOMINANCE = 0.3;
 
 const Cell = struct {
@@ -13,31 +14,53 @@ const Cell = struct {
     status: bool,
 };
 
+/// Stores a linear grid of cells and manages their state, color, and
+/// population across generations.
+///
+/// Each cell tracks whether it is alive and its associated color. The grid
+/// evolves according to the simulation rules, with configurable mutation
+/// and color inheritance. The linear storage uses row-major indexing:
+/// the cell at column `x` and row `y` is stored at `y * cols + x`.
+/// The linear congruential generator and color manager are borrowed
+/// dependencies and are not owned by this structure.
 pub const LinearMatrix = struct {
+    /// Allocator used for matrix memory.
     allocator: std.mem.Allocator,
 
+    /// Random number generator used during matrix initialization and mutation.
     lcg: *MiniLCG,
-    color_manager: *ColorManager,
+    /// Manages the colors assigned to cells.
+    color_manager: *mod_color.ColorManager,
 
+    /// Probability of a cell being alive at initialization.
     alive_probability: f32,
 
+    /// Current generation counter.
     cur_gen: i16 = 0,
+    /// Generation at which mutations begin. A negative value disables mutation.
     mut_gen: i16 = 0,
 
+    /// Probability threshold used to select or mix parent colors.
     dominance: f32 = DEFAULT_DOMINANCE,
 
+    /// Number of columns in the matrix.
     cols: usize = 0,
+    /// Number of rows in the matrix.
     rows: usize = 0,
 
+    /// Current matrix state.
     matrix_current: ?[]Cell = null,
+    /// Buffer used to calculate the next matrix state.
     matrix_next: ?[]Cell = null,
 
+    /// Number of living cells in the current generation.
     population: usize = 0,
 
+    /// Initializes a matrix with the supplied dependencies and settings.
     pub fn init(
         allocator: std.mem.Allocator,
         lcg: *MiniLCG,
-        color_manager: *ColorManager,
+        color_manager: *mod_color.ColorManager,
         alive: f32,
         mut_gen: i16,
     ) LinearMatrix {
@@ -52,6 +75,7 @@ pub const LinearMatrix = struct {
         };
     }
 
+    /// Releases the memory allocated for the matrix buffers.
     pub fn free(self: *@This()) void {
         if (self.matrix_current != null) {
             self.allocator.free(self.matrix_current.?);
@@ -64,6 +88,7 @@ pub const LinearMatrix = struct {
         }
     }
 
+    /// Allocates the matrix buffers and initializes the cell states and colors.
     pub fn build(self: *@This(), cols: usize, rows: usize) !void {
         self.cols = cols;
         self.rows = rows;
@@ -134,30 +159,39 @@ pub const LinearMatrix = struct {
         return self.color_manager.rand_color();
     }
 
+    /// Returns the current matrix buffer, or null if it has not been initialized.
     pub fn vector(self: *@This()) ?[]Cell {
         return self.matrix_current;
     }
 
+    /// Returns the number of columns.
     pub fn cols_len(self: @This()) usize {
         return self.cols;
     }
 
+    /// Returns the number of rows.
     pub fn rows_len(self: @This()) usize {
         return self.rows;
     }
 
+    /// Returns the current generation counter.
     pub fn current_generation(self: @This()) i16 {
         return self.cur_gen;
     }
 
+    /// Returns the configured mutation generation.
     pub fn mutation_generation(self: @This()) i16 {
         return self.mut_gen;
     }
 
+    /// Returns the number of living cells in the current generation.
     pub fn alive_population(self: @This()) usize {
         return self.population;
     }
 
+    /// Calculates and applies the next generation of the matrix.
+    ///
+    /// Does nothing if the matrix has not been initialized or is empty.
     pub fn next(self: *@This()) !void {
         if (self.matrix_current == null or self.matrix_next == null) {
             return;
@@ -204,10 +238,11 @@ pub const LinearMatrix = struct {
         self.matrix_next = tmp;
     }
 
-    inline fn count_parents(self: *@This(), y: usize, x: usize) struct {
-        count: usize,
-        parents: [8]?[3]u8,
-    } {
+    inline fn count_parents(
+        self: *@This(),
+        y: usize,
+        x: usize,
+    ) struct { count: usize, parents: [8]?[3]u8 } {
         const mtrx = self.matrix_current.?;
 
         const min_y = y -| SEARCH_AREA;
@@ -243,10 +278,12 @@ pub const LinearMatrix = struct {
         };
     }
 
-    inline fn calculate_state(self: *@This(), cell: Cell, count: usize, parents: [8]?[3]u8) struct {
-        alive: bool,
-        color: ?[3]u8,
-    } {
+    inline fn calculate_state(
+        self: *@This(),
+        cell: Cell,
+        count: usize,
+        parents: [8]?[3]u8,
+    ) struct { alive: bool, color: ?[3]u8 } {
         if (!cell.status and count == 3) {
             var compacted: [8][3]u8 = undefined;
             const colors = compact_parents(&parents, &compacted);

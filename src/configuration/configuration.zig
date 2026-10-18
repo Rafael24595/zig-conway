@@ -121,32 +121,59 @@ const FLAG_COLOR_MODE: Flag = Flag{
     .aux_desc = "(use \"help\" to list available modes)",
 };
 
+/// Stores the application settings parsed from command-line arguments,
+/// including rendering options, animation timing, inheritance settings and appearance preferences.
 pub const Configuration = struct {
+    /// Enables diagnostic information during execution.
     debug: bool = false,
+    /// Enables the display of keyboard controls.
     controls: bool = false,
 
+    /// Random seed used to initialize the matrix generation.
+    /// A value of zero causes the seed to be derived from the current timestamp.
     seed: u64 = 0,
 
+    /// Application start timestamp, in milliseconds since the Unix epoch.
     start_ms: i64 = 0,
 
+    /// Delay between animation frames, in milliseconds.
     milliseconds: u64 = frame_pause_ms,
+    // Probability of a cell being alive at initialization, expressed as a float between 0 and 1.
     alive_probability: f32 = 0.3,
 
+    /// Maximum generation at which mutations are allowed.
+    /// A negative value disables mutation.
     mutation_generation: i16 = -1,
 
+    /// Theme used to render matrix symbols.
     symbol_mode: symbol.Theme = symbol.Theme.classic,
+    /// Color formatting mode used by the output formatters.
     color_mode: formatter.FormatterCode = formatter.FormatterCode.rgb,
 
+    /// Enables inheritance mode.
     inheritance: bool = false,
+    /// Theme used to determine inheritance colors.
     inheritance_mode: color.Theme = color.Theme.default,
+    /// Number of inheritance factions to use.
     inheritance_faction: usize = color.meta_of(color.Theme.default).colors.len,
 
+    /// Formatter configuration for the matrix output.
     formatter_matrix: formatter.FormatterMatrixUnion = formatter.FormatterMatrixUnion{ .unfo = .{} },
+    /// Formatter configuration for individual cells.
     formatter_cell: formatter.FormatterCellUnion = formatter.FormatterCellUnion{ .unfo = .{} },
 
+    /// Default color used for rendering.
     color: kit_color.Color = kit_color.Color.white,
 
-    pub fn init(allocator: std.mem.Allocator, printer: *Printer, args: [][:0]u8) !@This() {
+    /// Parses command-line arguments and initializes the application settings.
+    ///
+    /// Returns an error if argument parsing or output formatting fails.
+    /// Help and version requests terminate the process after printing their output.
+    pub fn init(
+        allocator: std.mem.Allocator,
+        printer: *Printer,
+        args: [][:0]u8,
+    ) !@This() {
         defer printer.reset();
 
         var config = Configuration{};
@@ -390,6 +417,10 @@ pub const Configuration = struct {
     }
 };
 
+/// Builds the application configuration from the current process arguments.
+///
+/// Allocates the argument list using `allocator` and releases it before
+/// returning. Propagates errors from argument allocation and parsing.
 pub fn from_args(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);

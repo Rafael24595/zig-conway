@@ -18,6 +18,8 @@ const RenderContext = @import("app/render_context.zig").RenderContext;
 
 const color = @import("domain/color.zig");
 
+/// Initializes application resources, configures the terminal, and starts
+/// the rendering loop.
 pub fn main() !void {
     var persistent = AllocatorTracer.init(
         std.heap.page_allocator,
@@ -68,6 +70,8 @@ pub fn main() !void {
     );
 }
 
+/// Runs the application session, coordinating input handling and rendering
+/// until termination is requested.
 pub fn run(
     state: *RuntimeState,
     persistent: *AllocatorTracer,
@@ -128,6 +132,11 @@ pub fn run(
     }
 }
 
+/// Runs a rendering cycle using the terminal's current dimensions.
+///
+/// Creates and releases a render context for the duration of the cycle.
+/// A terminal resize ends the current cycle so rendering can restart with
+/// updated dimensions.
 inline fn run_render_cycle(
     allocator: std.mem.Allocator,
     persistent: *AllocatorTracer,

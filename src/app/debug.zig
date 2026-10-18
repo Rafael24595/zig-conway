@@ -14,6 +14,10 @@ const configuration = @import("../configuration/configuration.zig");
 
 const RenderContext = @import("./render_context.zig").RenderContext;
 
+/// Prints diagnostic information about the application, runtime state,
+/// memory usage, rendering configuration, and current matrix dimensions.
+///
+/// Returns an error if memory allocation, time formatting, or printing fails.
 pub fn print_debug(
     state: *RuntimeState,
     persistent: *AllocatorTracer,
@@ -95,6 +99,9 @@ pub fn print_debug(
     }
 }
 
+/// Prints the keyboard shortcuts available to control the application.
+///
+/// Returns an error if printing the controls fails.
 pub fn print_controls(printer: *Printer) !void {
     try printer.printf("\nPause: [{s}] | Restart: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Exit: [{s}]", .{
         "p, space",

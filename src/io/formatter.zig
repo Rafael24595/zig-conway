@@ -1,18 +1,21 @@
 const std = @import("std");
 
+/// Defines the supported terminal color formats.
 pub const FormatterCode = enum {
+    /// Uses the 256-color ANSI palette.
     ansi,
+    /// Uses 24-bit RGB ANSI escape sequences.
     rgb,
 };
 
+/// Selects the formatter used to color matrix output.
 pub const FormatterMatrixUnion = union(enum) {
     ansi: FormatterMatrix("\x1b[38;5;{d}m{s}", "\x1b[0m", format_ansi),
     rgb: FormatterMatrix("\x1b[38;2;{d};{d};{d}m{s}", "\x1b[0m", format_rgb),
     unfo: FormatterMatrix("", "\x1b[0m", unformatted),
 
-    pub fn fmt_bytes(
-        self: @This(),
-    ) usize {
+    /// Returns the combined prefix and suffix byte length.
+    pub fn fmt_bytes(self: @This()) usize {
         return switch (self) {
             .ansi => |f| f.fmt_bytes(),
             .rgb => |f| f.fmt_bytes(),
@@ -20,9 +23,8 @@ pub const FormatterMatrixUnion = union(enum) {
         };
     }
 
-    pub fn prefix(
-        self: @This(),
-    ) []const u8 {
+    /// Returns the format string used for the color prefix.
+    pub fn prefix(self: @This()) []const u8 {
         return switch (self) {
             .ansi => |f| f.prefix(),
             .rgb => |f| f.prefix(),
@@ -30,9 +32,8 @@ pub const FormatterMatrixUnion = union(enum) {
         };
     }
 
-    pub fn sufix(
-        self: @This(),
-    ) []const u8 {
+    /// Returns the format string used to reset the color.
+    pub fn sufix(self: @This()) []const u8 {
         return switch (self) {
             .ansi => |f| f.sufix(),
             .rgb => |f| f.sufix(),
@@ -40,6 +41,7 @@ pub const FormatterMatrixUnion = union(enum) {
         };
     }
 
+    /// Formats the color prefix into the provided buffer.
     pub fn format_prefix(
         self: @This(),
         buf: []u8,
@@ -55,14 +57,14 @@ pub const FormatterMatrixUnion = union(enum) {
     }
 };
 
+/// Selects the formatter used to color individual cells.
 pub const FormatterCellUnion = union(enum) {
     ansi: FormatterCell("\x1b[38;5;{d}m{s}", format_ansi),
     rgb: FormatterCell("\x1b[38;2;{d};{d};{d}m{s}", format_rgb),
     unfo: FormatterCell("\x1b[38;2;{d};{d};{d}m{s}", unformatted),
 
-    pub fn fmt_bytes(
-        self: @This(),
-    ) usize {
+    /// Returns the byte length of the cell format string.
+    pub fn fmt_bytes(self: @This()) usize {
         return switch (self) {
             .ansi => |f| f.fmt_bytes(),
             .rgb => |f| f.fmt_bytes(),
@@ -70,6 +72,7 @@ pub const FormatterCellUnion = union(enum) {
         };
     }
 
+    /// Formats a cell using the selected color format.
     pub fn format(
         self: @This(),
         buf: []u8,

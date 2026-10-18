@@ -6,6 +6,7 @@ const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
 
 const kit_color = terminal_kit.color;
 
+/// Available color themes.
 pub const Theme = enum {
     default,
     pastel,
@@ -16,7 +17,9 @@ pub const Theme = enum {
     //aoe,
 };
 
+/// Stores the color palette associated with a theme.
 pub const ThemeMeta = struct {
+    /// Colors available in the palette.
     colors: []const kit_color.Color,
 };
 
@@ -114,10 +117,14 @@ pub const WARM_THEME = ThemeMeta{
 //    },
 //};
 
+/// Returns the color palette associated with the given theme.
 pub fn meta_of(m: Theme) ThemeMeta {
     return ThemeMap[@intFromEnum(m)];
 }
 
+/// Selects up to `size` unique colors from the provided palette.
+///
+/// Returns an allocated slice containing the selected colors.
 pub fn sample(
     allocator: std.mem.Allocator,
     lcg: *MiniLCG,
@@ -144,13 +151,18 @@ pub fn sample(
     return table_rng;
 }
 
+/// Manages RGB colors used during matrix generation.
 pub const ColorManager = struct {
+    /// Allocator used for the color table.
     allocator: std.mem.Allocator,
 
+    /// Random number generator used for color selection.
     lcg: *MiniLCG,
 
+    /// RGB values available for selection.
     table: [][3]u8,
 
+    /// Initializes the color manager from the provided palette.
     pub fn init(
         allocator: std.mem.Allocator,
         lcg: *MiniLCG,
@@ -180,17 +192,22 @@ pub const ColorManager = struct {
         };
     }
 
+    /// Releases the resources owned by the color manager.
     pub fn free(self: *@This()) void {
         self.allocator.free(self.table);
         self.table = undefined;
     }
 
+    /// Returns a randomly selected color from the configured palette.
     pub fn rand_color(self: *@This()) [3]u8 {
         const table = self.table;
         const idx = self.lcg.rand_in_range(0, table.len - 1);
         return table[idx];
     }
 
+    /// Selects a color or mixes the provided colors according to `sel_prov`.
+    ///
+    /// Returns white when the input contains no colors.
     pub fn mix_or_select(self: *@This(), sel_prov: f32, colors: []const [3]u8) [3]u8 {
         if (colors.len == 0) {
             return kit_color.rgb_of(kit_color.Color.white);

@@ -11,20 +11,30 @@ const symbol = @import("../domain/symbol.zig");
 
 const formatter = @import("formatter.zig");
 
+/// Formats and prints a linear matrix using configurable symbols and colors.
 pub const LinearMatrixPrinter = struct {
+    /// Allocator used for the printer's owned buffers.
     allocator: std.mem.Allocator,
 
+    /// Printer used to output the formatted frame.
     printer: *Printer,
+    /// Formatter used for individual cells.
     formatter: formatter.FormatterCellUnion,
 
+    /// Format string used to prefix the entire matrix output.
     prefix: []const u8,
+    /// Format string used to suffix the entire matrix output.
     sufix: []const u8,
 
+    /// Symbols used to represent alive and dead cells.
     mode_meta: symbol.ThemeMeta,
 
+    /// Accumulates the complete formatted frame before output.
     buffer: std.ArrayList(u8),
+    /// Scratch buffer used to format individual characters.
     format: []u8,
 
+    /// Initializes the printer and allocates its formatting buffers.
     pub fn init(
         allocator: std.mem.Allocator,
         printer: *Printer,
@@ -66,12 +76,14 @@ pub const LinearMatrixPrinter = struct {
         };
     }
 
+    /// Releases the buffers owned by this printer.
     pub fn free(self: *@This()) void {
         self.buffer.deinit(self.allocator);
         self.allocator.free(self.format);
         self.allocator.free(self.prefix);
     }
 
+    /// Formats and prints the current matrix frame.
     pub fn print(self: *@This(), mtrx: *LinearMatrix) !void {
         if (mtrx.vector() == null or mtrx.vector().?.len == 0) {
             return;

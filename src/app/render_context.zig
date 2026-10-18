@@ -15,12 +15,21 @@ const LinearMatrixPrinter = @import("../io/matrix_printer.zig").LinearMatrixPrin
 const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 const color = @import("../domain/color.zig");
 
+/// Holds the resources and state required to render the matrix,
+/// including its matrix data, output formatter, and frame counter.
 pub const RenderContext = struct {
+    /// Matrix containing the data to be rendered.
     matrix: LinearMatrix,
+    /// Handles the formatting and output of the matrix.
     matrix_printer: LinearMatrixPrinter,
 
+    /// Tracks the number of frames rendered and calculates the frame rate.
     counter: Counter,
 
+    /// Initializes the rendering resources using the terminal dimensions
+    /// and the provided configuration.
+    ///
+    /// Returns an error if initialization or matrix construction fails.
     pub fn init(
         self: *@This(),
         allocator: std.mem.Allocator,
@@ -62,6 +71,9 @@ pub const RenderContext = struct {
         self.counter = Counter.init();
     }
 
+    /// Releases the resources owned by the rendering context.
+    ///
+    /// Must be called after successful initialization.
     pub fn deinit(self: *RenderContext) void {
         self.matrix.free();
         self.matrix_printer.free();
