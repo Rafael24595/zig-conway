@@ -42,7 +42,7 @@ pub const LinearMatrixPrinter = struct {
         const prefix = fmt_mtrx.format_prefix(buf, rgb[0], rgb[1], rgb[2]);
         const sufix = fmt_mtrx.sufix();
 
-        const meta = symbol.metaOf(mode_code);
+        const meta = symbol.meta_of(mode_code);
 
         const rows = matrix.rows_len();
         const cols = matrix.cols_len();

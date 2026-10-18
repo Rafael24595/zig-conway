@@ -16,19 +16,19 @@ const RenderContext = @import("./render_context.zig").RenderContext;
 
 pub fn print_debug(
     state: *RuntimeState,
-    persistentAllocator: *AllocatorTracer,
-    scratchAllocator: *AllocatorTracer,
+    persistent: *AllocatorTracer,
+    scratch: *AllocatorTracer,
     config: *const configuration.Configuration,
     printer: *Printer,
     context: *RenderContext,
 ) !void {
-    var scratch = scratchAllocator.allocator();
+    var allocator = scratch.allocator();
 
     var matrix = context.matrix;
 
     const cols = matrix.cols_len();
     const rows = matrix.rows_len();
-    const fixedArea = rows * cols;
+    const area = rows * cols;
 
     var end_ms = std.time.milliTimestamp();
     if (state.pause.load(.acquire)) {
@@ -36,8 +36,9 @@ pub fn print_debug(
     }
 
     const start_timestamp = state.start_timestamp.load(.acquire);
-    const time = try kit_time.milliseconds_to_time(scratch, end_ms - start_timestamp, null);
-    defer scratch.free(time);
+
+    const time = try kit_time.milliseconds_to_time(allocator, end_ms - start_timestamp, null);
+    defer allocator.free(time);
 
     var col = @tagName(config.color);
     if (config.inheritance) {
@@ -63,15 +64,15 @@ pub fn print_debug(
     });
 
     try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes | Paused {any} | FPS: {d} \n", .{
-        persistentAllocator.bytes(),
-        scratchAllocator.bytes(),
+        persistent.bytes(),
+        scratch.bytes(),
         paused,
         context.counter.get_frame_rate(std.time.ms_per_s),
     });
 
     try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Symbol: {s} | Color: {s} \n", .{
         config.seed,
-        fixedArea,
+        area,
         cols,
         rows,
         @tagName(config.symbol_mode),

@@ -382,7 +382,7 @@ pub const Configuration = struct {
     }
 };
 
-pub fn fromArgs(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
+pub fn from_args(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
     return Configuration.init(allocator, printer, args);

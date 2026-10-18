@@ -19,16 +19,21 @@ const RenderContext = @import("app/render_context.zig").RenderContext;
 const color = @import("domain/color.zig");
 
 pub fn main() !void {
-    const basePersistentAllocator = std.heap.page_allocator;
-    var persistentAllocator = AllocatorTracer.init(basePersistentAllocator);
+    var persistent = AllocatorTracer.init(
+        std.heap.page_allocator,
+    );
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
-    const baseScratchAllocator = gpa.allocator();
-    var scratchAllocator = AllocatorTracer.init(baseScratchAllocator);
+    var scratch = AllocatorTracer.init(
+        gpa.allocator(),
+    );
 
-    var arena = std.heap.ArenaAllocator.init(scratchAllocator.allocator());
+    var arena = std.heap.ArenaAllocator.init(
+        scratch.allocator(),
+    );
+
     defer arena.deinit();
 
     var printer = Printer{
@@ -38,8 +43,8 @@ pub fn main() !void {
 
     defer printer.reset();
 
-    const config = try configuration.fromArgs(
-        persistentAllocator.allocator(),
+    const config = try configuration.from_args(
+        persistent.allocator(),
         &printer,
     );
 
@@ -56,8 +61,8 @@ pub fn main() !void {
 
     try run(
         &state,
-        &persistentAllocator,
-        &scratchAllocator,
+        &persistent,
+        &scratch,
         &config,
         &printer,
     );
@@ -65,8 +70,8 @@ pub fn main() !void {
 
 pub fn run(
     state: *RuntimeState,
-    persistentAllocator: *AllocatorTracer,
-    scratchAllocator: *AllocatorTracer,
+    persistent: *AllocatorTracer,
+    scratch: *AllocatorTracer,
     config: *const configuration.Configuration,
     printer: *Printer,
 ) !void {
@@ -78,11 +83,11 @@ pub fn run(
         };
     }
 
-    var allocator = persistentAllocator.allocator();
+    const allocator = persistent.allocator();
 
     var lcg = MiniLCG.init(config.seed);
 
-    var coloManager = try color.ColorManager.init(
+    var color_manager = try color.ColorManager.init(
         allocator,
         &lcg,
         config.inheritance_mode,
@@ -109,39 +114,39 @@ pub fn run(
         _ = state.consume_reload();
 
         try run_render_cycle(
-            &allocator,
-            persistentAllocator,
-            scratchAllocator,
+            allocator,
+            persistent,
+            scratch,
             state,
             config,
             printer,
             &lcg,
-            &colorManager,
+            &color_manager,
         );
     }
 }
 
 inline fn run_render_cycle(
-    allocator: *std.mem.Allocator,
-    persistentAllocator: *AllocatorTracer,
-    scratchAllocator: *AllocatorTracer,
+    allocator: std.mem.Allocator,
+    persistent: *AllocatorTracer,
+    scratch: *AllocatorTracer,
     state: *RuntimeState,
     config: *const configuration.Configuration,
     printer: *Printer,
     lcg: *MiniLCG,
-    colorManager: *color.ColorManager,
+    color_manager: *color.ColorManager,
 ) !void {
     const winsize = try console.winsize();
 
     var context: RenderContext = undefined;
 
     try context.init(
-        allocator,
+        &allocator,
         winsize,
         config,
         printer,
         lcg,
-        colorManager,
+        color_manager,
     );
 
     defer context.deinit();
@@ -154,15 +159,15 @@ inline fn run_render_cycle(
         if (config.debug) {
             try debug.print_debug(
                 state,
-                persistentAllocator,
-                scratchAllocator,
+                persistent,
+                scratch,
                 config,
                 printer,
                 &context,
             );
         }
 
-        try context.matrixPrinter.print(&context.matrix);
+        try context.matrix_printer.print(&context.matrix);
 
         if (!state.pause.load(.acquire)) {
             try context.matrix.next();

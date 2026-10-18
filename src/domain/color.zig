@@ -114,7 +114,7 @@ pub const WARM_THEME = ThemeMeta{
 //    },
 //};
 
-pub fn metaOf(m: Theme) ThemeMeta {
+pub fn meta_of(m: Theme) ThemeMeta {
     return ThemeMap[@intFromEnum(m)];
 }
 

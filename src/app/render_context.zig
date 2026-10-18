@@ -17,7 +17,7 @@ const color = @import("../domain/color.zig");
 
 pub const RenderContext = struct {
     matrix: LinearMatrix,
-    matrixPrinter: LinearMatrixPrinter,
+    matrix_printer: LinearMatrixPrinter,
 
     counter: Counter,
 
@@ -47,7 +47,7 @@ pub const RenderContext = struct {
 
         try self.matrix.build(cols, rows);
 
-        self.matrixPrinter = try LinearMatrixPrinter.init(
+        self.matrix_printer = try LinearMatrixPrinter.init(
             allocator,
             printer,
             config.color,
@@ -57,14 +57,14 @@ pub const RenderContext = struct {
             &self.matrix,
         );
 
-        errdefer self.matrixPrinter.free();
+        errdefer self.matrix_printer.free();
 
         self.counter = Counter.init();
     }
 
     pub fn deinit(self: *RenderContext) void {
         self.matrix.free();
-        self.matrixPrinter.free();
+        self.matrix_printer.free();
     }
 };
 

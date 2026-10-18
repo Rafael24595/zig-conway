@@ -4,7 +4,7 @@ const MiniLCG = @import("terminal_kit").mini_lcg.MiniLCG;
 
 const ColorManager = @import("color.zig").ColorManager;
 
-const SearchArea = 1;
+const SEARCH_AREA = 1;
 
 const Cell = struct {
     color: ?[3]u8,
@@ -82,11 +82,11 @@ pub const LinearMatrix = struct {
     inline fn find_color(self: *@This(), y: usize, x: usize) [3]u8 {
         const mtrx = self.matrix_current.?;
 
-        const min_y = y -| SearchArea;
-        const max_y = @min(self.rows - 1, y + SearchArea);
+        const min_y = y -| SEARCH_AREA;
+        const max_y = @min(self.rows - 1, y + SEARCH_AREA);
 
-        const min_x = x -| SearchArea;
-        const max_x = @min(self.cols - 1, x + SearchArea);
+        const min_x = x -| SEARCH_AREA;
+        const max_x = @min(self.cols - 1, x + SEARCH_AREA);
 
         var color: ?[3]u8 = null;
         for (min_y..max_y + 1) |cy| {
@@ -188,11 +188,11 @@ pub const LinearMatrix = struct {
     } {
         const mtrx = self.matrix_current.?;
 
-        const min_y = y -| SearchArea;
-        const max_y = @min(self.rows - 1, y + SearchArea);
+        const min_y = y -| SEARCH_AREA;
+        const max_y = @min(self.rows - 1, y + SEARCH_AREA);
 
-        const min_x = x -| SearchArea;
-        const max_x = @min(self.cols - 1, x + SearchArea);
+        const min_x = x -| SEARCH_AREA;
+        const max_x = @min(self.cols - 1, x + SEARCH_AREA);
 
         var count: usize = 0;
         var parents: [8]?[3]u8 = .{null} ** 8;
