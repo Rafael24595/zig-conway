@@ -1,8 +1,8 @@
 const std = @import("std");
 
 pub const FormatterCode = enum {
-    ANSI,
-    RGB,
+    ansi,
+    rgb,
 };
 
 pub const FormatterMatrixUnion = union(enum) {

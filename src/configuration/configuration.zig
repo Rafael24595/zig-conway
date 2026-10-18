@@ -134,12 +134,12 @@ pub const Configuration = struct {
 
     mutation_generation: i16 = -1,
 
-    symbol_mode: symbol.Theme = symbol.Theme.Classic,
-    color_mode: formatter.FormatterCode = formatter.FormatterCode.RGB,
+    symbol_mode: symbol.Theme = symbol.Theme.classic,
+    color_mode: formatter.FormatterCode = formatter.FormatterCode.rgb,
 
     inheritance: bool = false,
-    inheritance_mode: color.Theme = color.Theme.Default,
-    inheritance_faction: usize = color.metaOf(color.Theme.Default).colors.len,
+    inheritance_mode: color.Theme = color.Theme.default,
+    inheritance_faction: usize = color.meta_of(color.Theme.default).colors.len,
 
     formatter_matrix: formatter.FormatterMatrixUnion = formatter.FormatterMatrixUnion{ .unfo = .{} },
     formatter_cell: formatter.FormatterCellUnion = formatter.FormatterCellUnion{ .unfo = .{} },
@@ -256,10 +256,10 @@ pub const Configuration = struct {
     fn init_formatters(config: *Configuration) void {
         if (config.inheritance) {
             switch (config.color_mode) {
-                formatter.FormatterCode.ANSI => {
+                formatter.FormatterCode.ansi => {
                     config.formatter_cell = formatter.FormatterCellUnion{ .ansi = .{} };
                 },
-                formatter.FormatterCode.RGB => {
+                formatter.FormatterCode.rgb => {
                     config.formatter_cell = formatter.FormatterCellUnion{ .rgb = .{} };
                 },
             }
@@ -270,10 +270,10 @@ pub const Configuration = struct {
         }
 
         switch (config.color_mode) {
-            formatter.FormatterCode.ANSI => {
+            formatter.FormatterCode.ansi => {
                 config.formatter_matrix = formatter.FormatterMatrixUnion{ .ansi = .{} };
             },
-            formatter.FormatterCode.RGB => {
+            formatter.FormatterCode.rgb => {
                 config.formatter_matrix = formatter.FormatterMatrixUnion{ .rgb = .{} };
             },
         }

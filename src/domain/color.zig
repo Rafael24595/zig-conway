@@ -7,13 +7,13 @@ const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
 const kit_color = terminal_kit.color;
 
 pub const Theme = enum {
-    Default,
-    Pastel,
-    Neon,
-    Earthy,
-    Cool,
-    Warm,
-    //AoE,
+    default,
+    pastel,
+    neon,
+    earthy,
+    cool,
+    warm,
+    //aoe,
 };
 
 pub const ThemeMeta = struct {
