@@ -22,6 +22,8 @@ pub const LinearMatrix = struct {
     cur_gen: i16 = 0,
     mut_gen: i16 = 0,
 
+    dominance: f32 = DEFAULT_DOMINANCE,
+
     cols: usize = 0,
     rows: usize = 0,
 
@@ -231,7 +233,7 @@ pub const LinearMatrix = struct {
 
             return .{
                 .alive = true,
-                .color = self.color_manager.mix_or_select(0.3, colors),
+                .color = self.color_manager.mix_or_select(self.dominance, colors),
             };
         }
 
