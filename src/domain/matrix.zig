@@ -90,7 +90,7 @@ pub const LinearMatrix = struct {
 
         var color: ?[3]u8 = null;
         for (min_y..max_y + 1) |cy| {
-            const row_start = y * self.cols;
+            const row_start = cy * self.cols;
 
             for (min_x..max_x + 1) |cx| {
                 if (cy == y and cx == x) {
