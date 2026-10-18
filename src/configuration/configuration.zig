@@ -283,13 +283,21 @@ pub const Configuration = struct {
         return;
     }
 
-    pub fn print_help(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) !void {
+    inline fn print_help(
+        allocator: std.mem.Allocator,
+        printer: *Printer,
+        config: Configuration,
+    ) !void {
         const message = try format_flags(allocator, printer, config);
         defer allocator.free(message);
         try printer.print(message);
     }
 
-    pub fn format_flags(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) ![]u8 {
+    inline fn format_flags(
+        allocator: std.mem.Allocator,
+        printer: *Printer,
+        config: Configuration,
+    ) ![]u8 {
         var buffer = try std.ArrayList(u8).initCapacity(allocator, 0);
 
         try buffer.appendSlice(allocator, "\nUsage: zig-conway             [options] \n\n");

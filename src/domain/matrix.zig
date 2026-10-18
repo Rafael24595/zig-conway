@@ -256,7 +256,7 @@ pub const LinearMatrix = struct {
         };
     }
 
-    fn mutate(self: *@This()) !void {
+    inline fn mutate(self: *@This()) !void {
         if (self.mut_gen < 0) {
             return;
         }

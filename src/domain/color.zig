@@ -198,7 +198,7 @@ pub const ColorManager = struct {
         return mix(colors);
     }
 
-    pub fn select(self: *@This(), colors: []const [3]u8) [3]u8 {
+    inline fn select(self: *@This(), colors: []const [3]u8) [3]u8 {
         const idx = self.lcg.rand_in_range(0, colors.len - 1);
         return colors[idx];
     }
