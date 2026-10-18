@@ -6,6 +6,8 @@ const ColorManager = @import("color.zig").ColorManager;
 
 const SEARCH_AREA = 1;
 
+pub const DEFAULT_DOMINANCE = 0.3;
+
 const Cell = struct {
     color: ?[3]u8,
     status: bool,
