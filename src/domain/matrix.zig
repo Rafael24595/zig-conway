@@ -118,23 +118,23 @@ pub const LinearMatrix = struct {
         return self.matrix_current;
     }
 
-    pub fn cols_len(self: *@This()) usize {
+    pub fn cols_len(self: @This()) usize {
         return self.cols;
     }
 
-    pub fn rows_len(self: *@This()) usize {
+    pub fn rows_len(self: @This()) usize {
         return self.rows;
     }
 
-    pub fn current_generation(self: *@This()) i16 {
+    pub fn current_generation(self: @This()) i16 {
         return self.cur_gen;
     }
 
-    pub fn mutation_generation(self: *@This()) i16 {
+    pub fn mutation_generation(self: @This()) i16 {
         return self.mut_gen;
     }
 
-    pub fn alive_population(self: *@This()) usize {
+    pub fn alive_population(self: @This()) usize {
         return self.population;
     }
 
