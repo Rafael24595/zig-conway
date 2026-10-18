@@ -52,6 +52,18 @@ pub const LinearMatrix = struct {
         };
     }
 
+    pub fn free(self: *@This()) void {
+        if (self.matrix_current != null) {
+            self.allocator.free(self.matrix_current.?);
+            self.matrix_current = null;
+        }
+
+        if (self.matrix_next != null) {
+            self.allocator.free(self.matrix_next.?);
+            self.matrix_next = null;
+        }
+    }
+
     pub fn build(self: *@This(), cols: usize, rows: usize) !void {
         self.cols = cols;
         self.rows = rows;
@@ -292,21 +304,9 @@ pub const LinearMatrix = struct {
 
         self.cur_gen = 0;
     }
-
-    pub fn free(self: *@This()) void {
-        if (self.matrix_current != null) {
-            self.allocator.free(self.matrix_current.?);
-            self.matrix_current = null;
-        }
-
-        if (self.matrix_next != null) {
-            self.allocator.free(self.matrix_next.?);
-            self.matrix_next = null;
-        }
-    }
 };
 
-pub fn define_matrix(allocator: *std.mem.Allocator, cols: usize, rows: usize) ![]Cell {
+fn define_matrix(allocator: std.mem.Allocator, cols: usize, rows: usize) ![]Cell {
     const mtrx = try allocator.alloc(Cell, cols * rows);
 
     @memset(mtrx, Cell{

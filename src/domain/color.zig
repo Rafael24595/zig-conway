@@ -180,6 +180,11 @@ pub const ColorManager = struct {
         };
     }
 
+    pub fn free(self: *@This()) void {
+        self.allocator.free(self.table);
+        self.table = undefined;
+    }
+
     pub fn rand_color(self: *@This()) [3]u8 {
         const table = self.table;
         const idx = self.lcg.rand_in_range(0, table.len - 1);
@@ -201,11 +206,6 @@ pub const ColorManager = struct {
     inline fn select(self: *@This(), colors: []const [3]u8) [3]u8 {
         const idx = self.lcg.rand_in_range(0, colors.len - 1);
         return colors[idx];
-    }
-
-    pub fn free(self: *@This()) void {
-        self.allocator.free(self.table);
-        self.table = null;
     }
 };
 
