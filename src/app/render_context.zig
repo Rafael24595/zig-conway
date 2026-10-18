@@ -23,7 +23,7 @@ pub const RenderContext = struct {
 
     pub fn init(
         self: *@This(),
-        allocator: *std.mem.Allocator,
+        allocator: std.mem.Allocator,
         winsize: console.WinSize,
         config: *const configuration.Configuration,
         printer: *Printer,

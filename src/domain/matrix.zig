@@ -12,7 +12,7 @@ const Cell = struct {
 };
 
 pub const LinearMatrix = struct {
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
 
     lcg: *MiniLCG,
     color_manager: *ColorManager,
@@ -32,7 +32,13 @@ pub const LinearMatrix = struct {
 
     population: usize = 0,
 
-    pub fn init(allocator: *std.mem.Allocator, lcg: *MiniLCG, color_manager: *ColorManager, alive: f32, mut_gen: i16) LinearMatrix {
+    pub fn init(
+        allocator: std.mem.Allocator,
+        lcg: *MiniLCG,
+        color_manager: *ColorManager,
+        alive: f32,
+        mut_gen: i16,
+    ) LinearMatrix {
         return LinearMatrix{
             .allocator = allocator,
             .lcg = lcg,

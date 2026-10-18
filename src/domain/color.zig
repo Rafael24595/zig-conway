@@ -119,7 +119,7 @@ pub fn meta_of(m: Theme) ThemeMeta {
 }
 
 pub fn sample(
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     lcg: *MiniLCG,
     size: usize,
     base: []const kit_color.Color,
@@ -145,7 +145,7 @@ pub fn sample(
 }
 
 pub const ColorManager = struct {
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
 
     lcg: *MiniLCG,
 

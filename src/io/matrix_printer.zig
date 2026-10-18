@@ -12,7 +12,7 @@ const symbol = @import("../domain/symbol.zig");
 const formatter = @import("formatter.zig");
 
 pub const LinearMatrixPrinter = struct {
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
 
     printer: *Printer,
     formatter: formatter.FormatterCellUnion,
@@ -26,7 +26,7 @@ pub const LinearMatrixPrinter = struct {
     format: []u8,
 
     pub fn init(
-        allocator: *std.mem.Allocator,
+        allocator: std.mem.Allocator,
         printer: *Printer,
         col: color.Color,
         fmt_mtrx: formatter.FormatterMatrixUnion,
@@ -51,7 +51,7 @@ pub const LinearMatrixPrinter = struct {
         const mtrx_fmt_len = rows * cols * char_fmt_len;
         const estimated_size = prefix.len + mtrx_fmt_len + sufix.len;
 
-        const buffer = try std.ArrayList(u8).initCapacity(allocator.*, estimated_size);
+        const buffer = try std.ArrayList(u8).initCapacity(allocator, estimated_size);
         const format = try allocator.alloc(u8, char_fmt_len);
 
         return .{
@@ -67,7 +67,7 @@ pub const LinearMatrixPrinter = struct {
     }
 
     pub fn free(self: *@This()) void {
-        self.buffer.deinit(self.allocator.*);
+        self.buffer.deinit(self.allocator);
         self.allocator.free(self.format);
         self.allocator.free(self.prefix);
     }
@@ -84,7 +84,7 @@ pub const LinearMatrixPrinter = struct {
         const rows = mtrx.rows_len();
         const cols = mtrx.cols_len();
 
-        try self.buffer.appendSlice(self.allocator.*, self.prefix);
+        try self.buffer.appendSlice(self.allocator, self.prefix);
 
         for (0..rows) |y| {
             const row_start = y * cols;
@@ -101,15 +101,15 @@ pub const LinearMatrixPrinter = struct {
                     cell = try self.formatter.format(self.format, c[0], c[1], c[2], cell);
                 }
 
-                try self.buffer.appendSlice(self.allocator.*, cell);
+                try self.buffer.appendSlice(self.allocator, cell);
             }
 
             if (y < rows - 1) {
-                try self.buffer.append(self.allocator.*, '\n');
+                try self.buffer.append(self.allocator, '\n');
             }
         }
 
-        try self.buffer.appendSlice(self.allocator.*, self.sufix);
+        try self.buffer.appendSlice(self.allocator, self.sufix);
 
         try self.printer.print(self.buffer.items);
     }

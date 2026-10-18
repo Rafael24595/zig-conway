@@ -143,7 +143,7 @@ inline fn run_render_cycle(
     var context: RenderContext = undefined;
 
     try context.init(
-        &allocator,
+        allocator,
         winsize,
         config,
         printer,
