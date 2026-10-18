@@ -151,7 +151,23 @@ pub const ColorManager = struct {
 
     table: [][3]u8,
 
-    pub fn init(allocator: *std.mem.Allocator, lcg: *MiniLCG, table: []const kit_color.Color) !@This() {
+    pub fn init(
+        allocator: std.mem.Allocator,
+        lcg: *MiniLCG,
+        theme: Theme,
+        size: usize,
+    ) !@This() {
+        const meta = meta_of(theme);
+
+        const table = try sample(
+            allocator,
+            lcg,
+            size,
+            meta.colors,
+        );
+
+        defer allocator.free(table);
+
         var table_rgb = try allocator.alloc([3]u8, table.len);
         for (table, 0..) |c, i| {
             table_rgb[i] = kit_color.rgb_of(c);

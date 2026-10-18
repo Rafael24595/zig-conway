@@ -82,19 +82,11 @@ pub fn run(
 
     var lcg = MiniLCG.init(config.seed);
 
-    const meta = color.metaOf(config.inheritance_mode);
-
-    const table = try color.sample(
-        &allocator,
+    var coloManager = try color.ColorManager.init(
+        allocator,
         &lcg,
+        config.inheritance_mode,
         config.inheritance_faction,
-        meta.colors,
-    );
-
-    var colorManager = try color.ColorManager.init(
-        &allocator,
-        &lcg,
-        table,
     );
 
     defer printer.reset();
