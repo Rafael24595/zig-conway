@@ -227,3 +227,117 @@ inline fn mix(colors: []const [3]u8) [3]u8 {
         @intCast(b / n),
     };
 }
+
+fn has_no_duplicates(comptime T: type, slice: []const T) bool {
+    for (slice, 0..) |v, i| {
+        for (slice[i + 1 ..]) |w| {
+            if (v == w) return false;
+        }
+    }
+    return true;
+}
+
+fn all_in_base(comptime T: type, slice: []const T, base: []const T) bool {
+    for (slice) |v| {
+        var found = false;
+        for (base) |b| {
+            if (v == b) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) return false;
+    }
+    return true;
+}
+
+test "correct RGB values for known colors" {
+    try std.testing.expectEqual([3]u8{ 255, 0, 0 }, kit_color.rgb_of(kit_color.Color.red));
+    try std.testing.expectEqual([3]u8{ 0, 255, 0 }, kit_color.rgb_of(kit_color.Color.green));
+    try std.testing.expectEqual([3]u8{ 0, 0, 255 }, kit_color.rgb_of(kit_color.Color.blue));
+}
+
+test "sample returns correct size and no duplicates" {
+    var allocator = std.heap.page_allocator;
+    var rng = MiniLCG.init(123);
+
+    const base = [_]kit_color.Color{ .red, .green, .blue, .yellow };
+    const size: usize = 3;
+
+    const result = try sample(allocator, &rng, size, base[0..]);
+    defer allocator.free(result);
+
+    try std.testing.expectEqual(size, result.len);
+    try std.testing.expect(has_no_duplicates(kit_color.Color, result));
+    try std.testing.expect(all_in_base(kit_color.Color, result, base[0..]));
+}
+
+test "sample clamps size to base length" {
+    var allocator = std.heap.page_allocator;
+    var rng = MiniLCG.init(42);
+
+    const base = [_]kit_color.Color{ .red, .green };
+    const size = 5;
+
+    const result = try sample(allocator, &rng, size, base[0..]);
+    defer allocator.free(result);
+
+    try std.testing.expectEqual(base.len, result.len);
+    try std.testing.expect(has_no_duplicates(kit_color.Color, result));
+    try std.testing.expect(all_in_base(kit_color.Color, result, base[0..]));
+}
+
+test "sample is deterministic with same seed" {
+    var allocator = std.heap.page_allocator;
+
+    const base = [_]kit_color.Color{ .red, .green, .blue, .yellow };
+    const size = 3;
+
+    var rng1 = MiniLCG.init(777);
+    var rng2 = MiniLCG.init(777);
+
+    const result1 = try sample(allocator, &rng1, size, base[0..]);
+    const result2 = try sample(allocator, &rng2, size, base[0..]);
+    defer allocator.free(result1);
+    defer allocator.free(result2);
+
+    try std.testing.expectEqualSlices(kit_color.Color, result1, result2);
+}
+
+test "sample handles empty base" {
+    var allocator = std.heap.page_allocator;
+    var rng = MiniLCG.init(999);
+
+    const base: [0]kit_color.Color = undefined;
+    const size = 3;
+
+    const result = try sample(allocator, &rng, size, base[0..]);
+    defer allocator.free(result);
+
+    try std.testing.expectEqual(0, result.len);
+}
+
+test "ColorManager.mix returns the average RGB values" {
+    const colors = [_][3]u8{
+        .{ 100, 50, 0 },
+        .{ 200, 150, 100 },
+    };
+
+    try std.testing.expectEqual(
+        [3]u8{ 150, 100, 50 },
+        mix(&colors),
+    );
+}
+
+test "ColorManager.mix averages multiple colors" {
+    const colors = [_][3]u8{
+        .{ 0, 30, 60 },
+        .{ 30, 60, 90 },
+        .{ 60, 90, 120 },
+    };
+
+    try std.testing.expectEqual(
+        [3]u8{ 30, 60, 90 },
+        mix(&colors),
+    );
+}

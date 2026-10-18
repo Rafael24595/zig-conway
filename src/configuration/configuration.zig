@@ -387,3 +387,101 @@ pub fn from_args(allocator: std.mem.Allocator, printer: *Printer) !Configuration
     defer std.process.argsFree(allocator, args);
     return Configuration.init(allocator, printer, args);
 }
+
+test "Configuration uses the expected default values" {
+    const config = Configuration{};
+
+    try std.testing.expect(!config.debug);
+    try std.testing.expect(!config.controls);
+    try std.testing.expect(!config.inheritance);
+
+    try std.testing.expectEqual(0, config.seed);
+    try std.testing.expectEqual(0, config.start_ms);
+    try std.testing.expectEqual(frame_pause_ms, config.milliseconds);
+
+    try std.testing.expectEqual(0.3, config.alive_probability);
+    try std.testing.expectEqual(-1, config.mutation_generation);
+
+    try std.testing.expectEqual(symbol.Theme.classic, config.symbol_mode);
+    try std.testing.expectEqual(formatter.FormatterCode.rgb, config.color_mode);
+
+    try std.testing.expectEqual(color.Theme.default, config.inheritance_mode);
+    try std.testing.expectEqual(color.meta_of(color.Theme.default).colors.len, config.inheritance_faction);
+
+    try std.testing.expectEqual(kit_color.Color.white, config.color);
+
+    try std.testing.expectEqual(.unfo, std.meta.activeTag(config.formatter_matrix));
+    try std.testing.expectEqual(.unfo, std.meta.activeTag(config.formatter_cell));
+}
+
+test "init_formatters configures ANSI formatters in inheritance mode" {
+    var config = Configuration{
+        .inheritance = true,
+        .color_mode = formatter.FormatterCode.ansi,
+    };
+
+    Configuration.init_formatters(&config);
+
+    try std.testing.expectEqual(
+        .unfo,
+        std.meta.activeTag(config.formatter_matrix),
+    );
+    try std.testing.expectEqual(
+        .ansi,
+        std.meta.activeTag(config.formatter_cell),
+    );
+}
+
+test "init_formatters configures RGB formatters in inheritance mode" {
+    var config = Configuration{
+        .inheritance = true,
+        .color_mode = formatter.FormatterCode.rgb,
+    };
+
+    Configuration.init_formatters(&config);
+
+    try std.testing.expectEqual(
+        .unfo,
+        std.meta.activeTag(config.formatter_matrix),
+    );
+    try std.testing.expectEqual(
+        .rgb,
+        std.meta.activeTag(config.formatter_cell),
+    );
+}
+
+test "init_formatters configures ANSI formatters without inheritance" {
+    var config = Configuration{
+        .inheritance = false,
+        .color_mode = formatter.FormatterCode.ansi,
+    };
+
+    Configuration.init_formatters(&config);
+
+    try std.testing.expectEqual(
+        .ansi,
+        std.meta.activeTag(config.formatter_matrix),
+    );
+    try std.testing.expectEqual(
+        .unfo,
+        std.meta.activeTag(config.formatter_cell),
+    );
+}
+
+test "init_formatters configures RGB formatters without inheritance" {
+    var config = Configuration{
+        .inheritance = false,
+        .color_mode = formatter.FormatterCode.rgb,
+    };
+
+    Configuration.init_formatters(&config);
+
+    try std.testing.expectEqual(
+        .rgb,
+        std.meta.activeTag(config.formatter_matrix),
+    );
+    try std.testing.expectEqual(
+        .unfo,
+        std.meta.activeTag(config.formatter_cell),
+    );
+}

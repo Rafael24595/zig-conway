@@ -327,3 +327,231 @@ fn compact_parents(parents: *const [8]?[3]u8, buffer: *[8][3]u8) []const [3]u8 {
 
     return buffer[0..count];
 }
+
+fn create_test_matrix(
+    allocator: std.mem.Allocator,
+    lcg: *MiniLCG,
+    color_manager: *mod_color.ColorManager,
+) !LinearMatrix {
+    var matrix = LinearMatrix.init(
+        allocator,
+        lcg,
+        color_manager,
+        0.0,
+        -1,
+    );
+
+    try matrix.build(3, 3);
+    return matrix;
+}
+
+test "define_matrix initializes all cells as dead and colorless" {
+    var allocator = std.testing.allocator;
+
+    const result = try define_matrix(allocator, 2, 3);
+    defer allocator.free(result);
+
+    try std.testing.expectEqual(6, result.len);
+
+    for (result) |cell| {
+        try std.testing.expect(!cell.status);
+        try std.testing.expect(cell.color == null);
+    }
+}
+
+test "define_matrix supports an empty matrix" {
+    var allocator = std.testing.allocator;
+
+    const result = try define_matrix(allocator, 0, 0);
+    defer allocator.free(result);
+
+    try std.testing.expectEqual(0, result.len);
+}
+
+test "compact_parents removes empty entries and preserves color order" {
+    const parents = [8]?[3]u8{
+        .{ 255, 0, 0 },
+        null,
+        .{ 0, 255, 0 },
+        null,
+        .{ 0, 0, 255 },
+        null,
+        null,
+        null,
+    };
+
+    var buffer: [8][3]u8 = undefined;
+    const result = compact_parents(&parents, &buffer);
+
+    try std.testing.expectEqual(3, result.len);
+    try std.testing.expectEqual([3]u8{ 255, 0, 0 }, result[0]);
+    try std.testing.expectEqual([3]u8{ 0, 255, 0 }, result[1]);
+    try std.testing.expectEqual([3]u8{ 0, 0, 255 }, result[2]);
+}
+
+test "compact_parents returns an empty slice when there are no parents" {
+    const parents = [_]?([3]u8){null} ** 8;
+
+    var buffer: [8][3]u8 = undefined;
+    const result = compact_parents(&parents, &buffer);
+
+    try std.testing.expectEqual(0, result.len);
+}
+
+test "next births a dead cell with three living neighbors" {
+    const allocator = std.testing.allocator;
+    var lcg = MiniLCG.init(1);
+
+    const meta = mod_color.meta_of(mod_color.Theme.default);
+
+    var color_manager = try mod_color.ColorManager.init(
+        allocator,
+        &lcg,
+        mod_color.Theme.default,
+        meta.colors.len,
+    );
+
+    defer color_manager.free();
+
+    var matrix = try create_test_matrix(
+        allocator,
+        &lcg,
+        &color_manager,
+    );
+
+    defer matrix.free();
+
+    const cells = matrix.matrix_current.?;
+    const living_color = [3]u8{ 255, 0, 0 };
+
+    cells[0] = .{ .status = true, .color = living_color };
+    cells[1] = .{ .status = true, .color = living_color };
+    cells[2] = .{ .status = true, .color = living_color };
+
+    try matrix.next();
+
+    const next_cells = matrix.matrix_current.?;
+    try std.testing.expect(next_cells[4].status);
+    try std.testing.expect(next_cells[4].color != null);
+    try std.testing.expectEqual(2, matrix.alive_population());
+}
+
+test "next preserves a living cell with two living neighbors" {
+    const allocator = std.testing.allocator;
+    var lcg = MiniLCG.init(2);
+
+    const meta = mod_color.meta_of(mod_color.Theme.default);
+
+    var color_manager = try mod_color.ColorManager.init(
+        allocator,
+        &lcg,
+        mod_color.Theme.default,
+        meta.colors.len,
+    );
+
+    defer color_manager.free();
+
+    var matrix = try create_test_matrix(
+        allocator,
+        &lcg,
+        &color_manager,
+    );
+
+    defer matrix.free();
+
+    const cells = matrix.matrix_current.?;
+    const living_color = [3]u8{ 255, 0, 0 };
+
+    cells[4] = .{ .status = true, .color = living_color };
+    cells[1] = .{ .status = true, .color = living_color };
+    cells[3] = .{ .status = true, .color = living_color };
+    matrix.population = 3;
+
+    try matrix.next();
+
+    const next_cells = matrix.matrix_current.?;
+
+    try std.testing.expect(next_cells[4].status);
+    try std.testing.expectEqual(living_color, next_cells[4].color.?);
+    try std.testing.expectEqual(4, matrix.alive_population());
+}
+
+test "next kills an isolated living cell" {
+    const allocator = std.testing.allocator;
+    var lcg = MiniLCG.init(3);
+
+    const meta = mod_color.meta_of(mod_color.Theme.default);
+
+    var color_manager = try mod_color.ColorManager.init(
+        allocator,
+        &lcg,
+        mod_color.Theme.default,
+        meta.colors.len,
+    );
+
+    defer color_manager.free();
+
+    var matrix = try create_test_matrix(
+        allocator,
+        &lcg,
+        &color_manager,
+    );
+    defer matrix.free();
+
+    const cells = matrix.matrix_current.?;
+    cells[4] = .{
+        .status = true,
+        .color = .{ 255, 0, 0 },
+    };
+    matrix.population = 1;
+
+    try matrix.next();
+
+    const next_cells = matrix.matrix_current.?;
+
+    try std.testing.expect(!next_cells[4].status);
+    try std.testing.expect(next_cells[4].color == null);
+    try std.testing.expectEqual(0, matrix.alive_population());
+}
+
+test "next kills a living cell with four living neighbors" {
+    const allocator = std.testing.allocator;
+    var lcg = MiniLCG.init(4);
+
+    const meta = mod_color.meta_of(mod_color.Theme.default);
+
+    var color_manager = try mod_color.ColorManager.init(
+        allocator,
+        &lcg,
+        mod_color.Theme.default,
+        meta.colors.len,
+    );
+
+    defer color_manager.free();
+
+    var matrix = try create_test_matrix(
+        allocator,
+        &lcg,
+        &color_manager,
+    );
+
+    defer matrix.free();
+
+    const cells = matrix.matrix_current.?;
+    const living_color = [3]u8{ 255, 0, 0 };
+
+    cells[4] = .{ .status = true, .color = living_color };
+    cells[1] = .{ .status = true, .color = living_color };
+    cells[3] = .{ .status = true, .color = living_color };
+    cells[5] = .{ .status = true, .color = living_color };
+    cells[7] = .{ .status = true, .color = living_color };
+    matrix.population = 5;
+
+    try matrix.next();
+
+    const next_cells = matrix.matrix_current.?;
+
+    try std.testing.expect(!next_cells[4].status);
+    try std.testing.expect(next_cells[4].color == null);
+    try std.testing.expectEqual(8, matrix.alive_population());
+}

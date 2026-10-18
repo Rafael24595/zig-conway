@@ -215,3 +215,102 @@ fn rgbToAnsi256(r: u8, g: u8, b: u8) u8 {
 
     return @intCast(16 + 36 * rr + 6 * gg + bb);
 }
+
+test "rgb_to_ansi256 maps grayscale values" {
+    try std.testing.expectEqual(16, rgb_to_ansi256(0, 0, 0));
+    try std.testing.expectEqual(231, rgb_to_ansi256(255, 255, 255));
+    try std.testing.expectEqual(232, rgb_to_ansi256(8, 8, 8));
+}
+
+test "rgb_to_ansi256 maps primary colors" {
+    try std.testing.expectEqual(196, rgb_to_ansi256(255, 0, 0));
+    try std.testing.expectEqual(46, rgb_to_ansi256(0, 255, 0));
+    try std.testing.expectEqual(21, rgb_to_ansi256(0, 0, 255));
+}
+
+test "cell formatter formats RGB colors" {
+    const formatter: FormatterCellUnion = .{ .rgb = .{} };
+    var buffer: [64]u8 = undefined;
+
+    const result = try formatter.format(
+        &buffer,
+        255,
+        0,
+        0,
+        "X",
+    );
+
+    try std.testing.expectEqualStrings("\x1b[38;2;255;0;0mX", result);
+}
+
+test "cell formatter returns unformatted characters" {
+    const formatter: FormatterCellUnion = .{ .unfo = .{} };
+    var buffer: [64]u8 = undefined;
+
+    const result = try formatter.format(
+        &buffer,
+        255,
+        0,
+        0,
+        "X",
+    );
+
+    try std.testing.expectEqualStrings("X", result);
+}
+
+test "cell formatter formats ANSI colors" {
+    const formatter: FormatterCellUnion = .{ .ansi = .{} };
+    var buffer: [64]u8 = undefined;
+
+    const result = try formatter.format(
+        &buffer,
+        255,
+        0,
+        0,
+        "X",
+    );
+
+    try std.testing.expectEqualStrings("\x1b[38;5;196mX", result);
+}
+
+test "matrix formatter formats RGB prefix" {
+    const formatter: FormatterMatrixUnion = .{ .rgb = .{} };
+    var buffer: [64]u8 = undefined;
+
+    const result = formatter.format_prefix(
+        &buffer,
+        255,
+        0,
+        0,
+    );
+
+    try std.testing.expectEqualStrings("\x1b[38;2;255;0;0m", result);
+}
+
+test "matrix formatter returns an empty prefix when unformatted" {
+    const formatter: FormatterMatrixUnion = .{ .unfo = .{} };
+    var buffer: [64]u8 = undefined;
+
+    const result = formatter.format_prefix(
+        &buffer,
+        255,
+        0,
+        0,
+    );
+
+    try std.testing.expectEqualStrings("", result);
+}
+
+test "matrix formatter exposes prefix and suffix lengths" {
+    const formatter: FormatterMatrixUnion = .{ .rgb = .{} };
+
+    try std.testing.expectEqualStrings(
+        "\x1b[38;2;{d};{d};{d}m{s}",
+        formatter.prefix(),
+    );
+    try std.testing.expectEqualStrings("\x1b[0m", formatter.sufix());
+    try std.testing.expectEqual(
+        formatter.prefix().len + formatter.sufix().len,
+        formatter.fmt_bytes(),
+    );
+}
