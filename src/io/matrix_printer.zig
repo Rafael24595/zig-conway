@@ -45,11 +45,15 @@ pub const LinearMatrixPrinter = struct {
         matrix: *LinearMatrix,
     ) !@This() {
         const len = fmt_mtrx.prefix().len;
-        const buf = try allocator.alloc(u8, len);
-
         const rgb = color.rgb_of(col);
 
-        const prefix = fmt_mtrx.format_prefix(buf, rgb[0], rgb[1], rgb[2]);
+        const prefix = fmt_mtrx.format_prefix(
+            try allocator.alloc(u8, len),
+            rgb[0],
+            rgb[1],
+            rgb[2],
+        );
+
         const sufix = fmt_mtrx.sufix();
 
         const meta = symbol.meta_of(mode_code);
@@ -78,9 +82,9 @@ pub const LinearMatrixPrinter = struct {
 
     /// Releases the buffers owned by this printer.
     pub fn free(self: *@This()) void {
+        self.allocator.free(self.prefix);
         self.buffer.deinit(self.allocator);
         self.allocator.free(self.format);
-        self.allocator.free(self.prefix);
     }
 
     /// Formats and prints the current matrix frame.
