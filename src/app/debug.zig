@@ -49,10 +49,7 @@ pub fn print_debug(
         col = "*Inheritance";
     }
 
-    var paused = false;
-    if (state.pause.load(.acquire)) {
-        paused = true;
-    }
+    const paused = state.pause.load(.acquire);
 
     var mut: []const u8 = "disabled";
     if (matrix.mutation_generation() >= 0) {
