@@ -5,8 +5,8 @@
     .minimum_zig_version = "0.15.1",
     .dependencies = .{
         .terminal_kit = .{
-            .url = "https://github.com/Rafael24595/zig-terminal-kit/releases/download/0.7.0/zig_terminal_kit-0.7.0.tar.gz",
-            .hash = "zig_terminal_kit-0.7.0-MaGLjsQFAQBMfFPIO0bnO7746qdjwnaXt2xHRb6AdomD",
+            .url = "https://github.com/Rafael24595/zig-terminal-kit/releases/download/0.8.0/zig_terminal_kit-0.8.0.tar.gz",
+            .hash = "zig_terminal_kit-0.8.0-MaGLjp8TAQD5Hin_q5HpRLICEU7C7ULjpjifpzDNkc_e",
         },
     },
     .paths = .{
