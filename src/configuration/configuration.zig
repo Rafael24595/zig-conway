@@ -146,16 +146,16 @@ pub const Configuration = struct {
     mutation_generation: i16 = -1,
 
     /// Theme used to render matrix symbols.
-    symbol_mode: symbol.Theme = symbol.Theme.classic,
+    symbol_mode: symbol.Theme = .classic,
     /// Color formatting mode used by the output formatters.
-    color_mode: formatter.FormatterCode = formatter.FormatterCode.rgb,
+    color_mode: formatter.FormatterCode = .rgb,
 
     /// Enables inheritance mode.
     inheritance: bool = false,
     /// Theme used to determine inheritance colors.
-    inheritance_mode: color.Theme = color.Theme.default,
+    inheritance_mode: color.Theme = .default,
     /// Number of inheritance factions to use.
-    inheritance_faction: usize = color.meta_of(color.Theme.default).colors.len,
+    inheritance_faction: usize = color.meta_of(.default).colors.len,
 
     /// Formatter configuration for the matrix output.
     formatter_matrix: formatter.FormatterMatrixUnion = formatter.FormatterMatrixUnion{ .unfo = .{} },
@@ -163,7 +163,7 @@ pub const Configuration = struct {
     formatter_cell: formatter.FormatterCellUnion = formatter.FormatterCellUnion{ .unfo = .{} },
 
     /// Default color used for rendering.
-    color: kit_color.Color = kit_color.Color.white,
+    color: kit_color.Color = .white,
 
     /// Parses command-line arguments and initializes the application settings.
     ///
