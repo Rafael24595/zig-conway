@@ -10,6 +10,7 @@ const Printer = terminal_kit.printer.Printer;
 const Flag = terminal_kit.configuration.Flag;
 const kit_conf = terminal_kit.configuration;
 
+const kit_formatter = terminal_kit.formatter;
 const kit_color = terminal_kit.color;
 
 const matrix = @import("../domain/matrix.zig");
@@ -158,9 +159,9 @@ pub const Configuration = struct {
     inheritance_faction: usize = color.meta_of(.default).colors.len,
 
     /// Formatter configuration for the matrix output.
-    formatter_matrix: formatter.FormatterMatrixUnion = formatter.FormatterMatrixUnion{ .unfo = .{} },
+    formatter_matrix: kit_formatter.FormatterMatrixUnion = formatter.matrix_unfo(),
     /// Formatter configuration for individual cells.
-    formatter_cell: formatter.FormatterCellUnion = formatter.FormatterCellUnion{ .unfo = .{} },
+    formatter_cell: kit_formatter.FormatterCellUnion = formatter.cell_unfo(),
 
     /// Default color used for rendering.
     color: kit_color.Color = .white,
@@ -282,32 +283,13 @@ pub const Configuration = struct {
 
     fn init_formatters(config: *Configuration) void {
         if (config.inheritance) {
-            switch (config.color_mode) {
-                formatter.FormatterCode.ansi => {
-                    config.formatter_cell = formatter.FormatterCellUnion{ .ansi = .{} };
-                },
-                formatter.FormatterCode.rgb => {
-                    config.formatter_cell = formatter.FormatterCellUnion{ .rgb = .{} };
-                },
-            }
-
-            config.formatter_matrix = formatter.FormatterMatrixUnion{ .unfo = .{} };
-
+            config.formatter_matrix = formatter.matrix_unfo();
+            config.formatter_cell = formatter.cell_union_of(config.color_mode);
             return;
         }
 
-        switch (config.color_mode) {
-            formatter.FormatterCode.ansi => {
-                config.formatter_matrix = formatter.FormatterMatrixUnion{ .ansi = .{} };
-            },
-            formatter.FormatterCode.rgb => {
-                config.formatter_matrix = formatter.FormatterMatrixUnion{ .rgb = .{} };
-            },
-        }
-
-        config.formatter_cell = formatter.FormatterCellUnion{ .unfo = .{} };
-
-        return;
+        config.formatter_matrix = formatter.matrix_union_of(config.color_mode);
+        config.formatter_cell = formatter.cell_unfo();
     }
 
     inline fn print_help(

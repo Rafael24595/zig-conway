@@ -3,13 +3,13 @@ const std = @import("std");
 const terminal_kit = @import("terminal_kit");
 
 const Printer = terminal_kit.printer.Printer;
+
 const color = terminal_kit.color;
+const formatter = terminal_kit.formatter;
 
 const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 
 const symbol = @import("../domain/symbol.zig");
-
-const formatter = @import("formatter.zig");
 
 /// Formats and prints a linear matrix using configurable symbols and colors.
 pub const LinearMatrixPrinter = struct {
