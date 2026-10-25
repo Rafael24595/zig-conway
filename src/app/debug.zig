@@ -36,7 +36,7 @@ pub fn print_debug(
 
     var end_ms = std.time.milliTimestamp();
     if (state.pause.load(.acquire)) {
-        end_ms = state.pause_timestamp.raw;
+        end_ms = state.pause_timestamp.load(.acquire);
     }
 
     const start_timestamp = state.start_timestamp.load(.acquire);
@@ -49,10 +49,7 @@ pub fn print_debug(
         col = "*Inheritance";
     }
 
-    var paused = false;
-    if (state.pause.load(.acquire)) {
-        paused = true;
-    }
+    const paused = state.pause.load(.acquire);
 
     var mut: []const u8 = "disabled";
     if (matrix.mutation_generation() >= 0) {

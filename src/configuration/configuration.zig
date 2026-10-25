@@ -10,6 +10,7 @@ const Printer = terminal_kit.printer.Printer;
 const Flag = terminal_kit.configuration.Flag;
 const kit_conf = terminal_kit.configuration;
 
+const kit_formatter = terminal_kit.formatter;
 const kit_color = terminal_kit.color;
 
 const matrix = @import("../domain/matrix.zig");
@@ -146,24 +147,24 @@ pub const Configuration = struct {
     mutation_generation: i16 = -1,
 
     /// Theme used to render matrix symbols.
-    symbol_mode: symbol.Theme = symbol.Theme.classic,
+    symbol_mode: symbol.Theme = .classic,
     /// Color formatting mode used by the output formatters.
-    color_mode: formatter.FormatterCode = formatter.FormatterCode.rgb,
+    color_mode: formatter.FormatterCode = .rgb,
 
     /// Enables inheritance mode.
     inheritance: bool = false,
     /// Theme used to determine inheritance colors.
-    inheritance_mode: color.Theme = color.Theme.default,
+    inheritance_mode: color.Theme = .default,
     /// Number of inheritance factions to use.
-    inheritance_faction: usize = color.meta_of(color.Theme.default).colors.len,
+    inheritance_faction: usize = color.meta_of(.default).colors.len,
 
     /// Formatter configuration for the matrix output.
-    formatter_matrix: formatter.FormatterMatrixUnion = formatter.FormatterMatrixUnion{ .unfo = .{} },
+    formatter_matrix: kit_formatter.FormatterMatrixUnion = formatter.matrix_unfo(),
     /// Formatter configuration for individual cells.
-    formatter_cell: formatter.FormatterCellUnion = formatter.FormatterCellUnion{ .unfo = .{} },
+    formatter_cell: kit_formatter.FormatterCellUnion = formatter.cell_unfo(),
 
     /// Default color used for rendering.
-    color: kit_color.Color = kit_color.Color.white,
+    color: kit_color.Color = .white,
 
     /// Parses command-line arguments and initializes the application settings.
     ///
@@ -173,7 +174,7 @@ pub const Configuration = struct {
         allocator: std.mem.Allocator,
         printer: *Printer,
         args: [][:0]u8,
-    ) !@This() {
+    ) !kit_conf.InitResult(Configuration) {
         defer printer.reset();
 
         var config = Configuration{};
@@ -184,12 +185,12 @@ pub const Configuration = struct {
 
             if (std.mem.eql(u8, arg, FLAG_HELP.flag_short) or std.mem.eql(u8, arg, FLAG_HELP.flag_long.?)) {
                 try print_help(allocator, printer, config);
-                std.process.exit(0);
+                return .inf;
             }
 
             if (std.mem.eql(u8, arg, FLAG_VERSION.flag_short) or std.mem.eql(u8, arg, FLAG_VERSION.flag_long.?)) {
                 try printer.printf("{any}: {s}\n", .{ build.name, build.version });
-                std.process.exit(0);
+                return .inf;
             }
 
             if (std.mem.eql(u8, arg, FLAG_DEBUG.flag_short)) {
@@ -263,8 +264,9 @@ pub const Configuration = struct {
                 continue;
             }
 
-            try printer.printf("Unknown argument: {s}\n", .{arg});
-            std.process.exit(1);
+            return .{
+                .err = try printer.format("\nUnknown argument: {s}\n", .{arg}),
+            };
         }
 
         const timestamp = std.time.milliTimestamp();
@@ -277,37 +279,18 @@ pub const Configuration = struct {
 
         init_formatters(&config);
 
-        return config;
+        return .{ .run = config };
     }
 
     fn init_formatters(config: *Configuration) void {
         if (config.inheritance) {
-            switch (config.color_mode) {
-                formatter.FormatterCode.ansi => {
-                    config.formatter_cell = formatter.FormatterCellUnion{ .ansi = .{} };
-                },
-                formatter.FormatterCode.rgb => {
-                    config.formatter_cell = formatter.FormatterCellUnion{ .rgb = .{} };
-                },
-            }
-
-            config.formatter_matrix = formatter.FormatterMatrixUnion{ .unfo = .{} };
-
+            config.formatter_matrix = formatter.matrix_unfo();
+            config.formatter_cell = formatter.cell_union_of(config.color_mode);
             return;
         }
 
-        switch (config.color_mode) {
-            formatter.FormatterCode.ansi => {
-                config.formatter_matrix = formatter.FormatterMatrixUnion{ .ansi = .{} };
-            },
-            formatter.FormatterCode.rgb => {
-                config.formatter_matrix = formatter.FormatterMatrixUnion{ .rgb = .{} };
-            },
-        }
-
-        config.formatter_cell = formatter.FormatterCellUnion{ .unfo = .{} };
-
-        return;
+        config.formatter_matrix = formatter.matrix_union_of(config.color_mode);
+        config.formatter_cell = formatter.cell_unfo();
     }
 
     inline fn print_help(
@@ -422,9 +405,12 @@ pub const Configuration = struct {
 /// Allocates the argument list using `allocator` and releases it before
 /// returning. Propagates errors from argument allocation and parsing.
 pub fn from_args(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
-    return Configuration.init(allocator, printer, args);
+    return kit_conf.from_args(
+        Configuration,
+        allocator,
+        printer,
+        Configuration.init,
+    );
 }
 
 test "Configuration uses the expected default values" {

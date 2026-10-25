@@ -3,13 +3,13 @@ const std = @import("std");
 const terminal_kit = @import("terminal_kit");
 
 const Printer = terminal_kit.printer.Printer;
+
 const color = terminal_kit.color;
+const formatter = terminal_kit.formatter;
 
 const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 
 const symbol = @import("../domain/symbol.zig");
-
-const formatter = @import("formatter.zig");
 
 /// Formats and prints a linear matrix using configurable symbols and colors.
 pub const LinearMatrixPrinter = struct {
@@ -45,11 +45,15 @@ pub const LinearMatrixPrinter = struct {
         matrix: *LinearMatrix,
     ) !@This() {
         const len = fmt_mtrx.prefix().len;
-        const buf = try allocator.alloc(u8, len);
-
         const rgb = color.rgb_of(col);
 
-        const prefix = fmt_mtrx.format_prefix(buf, rgb[0], rgb[1], rgb[2]);
+        const prefix = fmt_mtrx.format_prefix(
+            try allocator.alloc(u8, len),
+            rgb[0],
+            rgb[1],
+            rgb[2],
+        );
+
         const sufix = fmt_mtrx.sufix();
 
         const meta = symbol.meta_of(mode_code);
@@ -61,7 +65,9 @@ pub const LinearMatrixPrinter = struct {
         const mtrx_fmt_len = rows * cols * char_fmt_len;
         const estimated_size = prefix.len + mtrx_fmt_len + sufix.len;
 
-        const buffer = try std.ArrayList(u8).initCapacity(allocator, estimated_size);
+        var buffer = try std.ArrayList(u8).initCapacity(allocator, estimated_size);
+        errdefer buffer.deinit(allocator);
+
         const format = try allocator.alloc(u8, char_fmt_len);
 
         return .{
@@ -78,9 +84,9 @@ pub const LinearMatrixPrinter = struct {
 
     /// Releases the buffers owned by this printer.
     pub fn free(self: *@This()) void {
+        self.allocator.free(self.prefix);
         self.buffer.deinit(self.allocator);
         self.allocator.free(self.format);
-        self.allocator.free(self.prefix);
     }
 
     /// Formats and prints the current matrix frame.
