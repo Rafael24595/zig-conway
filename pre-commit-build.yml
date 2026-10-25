@@ -5,7 +5,7 @@ hooks:
     repos:
       - id: check-zig-context
         origin: https://github.com/Rafael24595/bash-hooks
-        tag: 0.18.1
+        tag: 0.19.1
         target: zig/sh
         name: check-zig-context.sh
         expect: false
@@ -13,18 +13,24 @@ hooks:
 
       - id: run-check
         origin: https://github.com/Rafael24595/bash-hooks
-        tag: 0.18.1
+        tag: 0.19.1
         target: zig/sh
         name: run-check.sh
 
       - id: run-fmt
         origin: https://github.com/Rafael24595/bash-hooks
-        tag: 0.18.1
+        tag: 0.19.1
         target: zig/sh
         name: run-fmt.sh
 
+      - id: run-build
+        origin: https://github.com/Rafael24595/bash-hooks
+        tag: 0.19.1
+        target: zig/sh
+        name: run-build.sh
+
       - id: run-tests
         origin: https://github.com/Rafael24595/bash-hooks
-        tag: 0.18.1
+        tag: 0.19.1
         target: zig/sh
         name: run-tests.sh
