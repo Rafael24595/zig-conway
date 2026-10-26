@@ -4,6 +4,8 @@ A configurable, terminal-based implementation of Conway's Game of Life written i
 
 Customize the simulation with different cell symbols, color palettes, color inheritance, and mutation settings. The matrix adapts to the terminal dimensions and uses buffered rendering to display each generation.
 
+![Conway's Game of Life](.img/conway.gif)
+
 > **Terminal compatibility:** The project has been tested with Windows Terminal 1.23.13503.0. Character rendering and performance may vary across terminal emulators. If RGB rendering is slow, try ANSI mode or disable inheritance mode.
 
 ## Features
