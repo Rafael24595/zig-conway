@@ -473,12 +473,12 @@ test "next births a dead cell with three living neighbors" {
     const allocator = std.testing.allocator;
     var lcg = MiniLCG.init(1);
 
-    const meta = mod_color.meta_of(mod_color.Theme.default);
+    const meta = mod_color.meta_of(.default);
 
     var color_manager = try mod_color.ColorManager.init(
         allocator,
         &lcg,
-        mod_color.Theme.default,
+        .default,
         meta.colors.len,
     );
 
@@ -511,12 +511,12 @@ test "next preserves a living cell with two living neighbors" {
     const allocator = std.testing.allocator;
     var lcg = MiniLCG.init(2);
 
-    const meta = mod_color.meta_of(mod_color.Theme.default);
+    const meta = mod_color.meta_of(.default);
 
     var color_manager = try mod_color.ColorManager.init(
         allocator,
         &lcg,
-        mod_color.Theme.default,
+        .default,
         meta.colors.len,
     );
 
@@ -551,12 +551,12 @@ test "next kills an isolated living cell" {
     const allocator = std.testing.allocator;
     var lcg = MiniLCG.init(3);
 
-    const meta = mod_color.meta_of(mod_color.Theme.default);
+    const meta = mod_color.meta_of(.default);
 
     var color_manager = try mod_color.ColorManager.init(
         allocator,
         &lcg,
-        mod_color.Theme.default,
+        .default,
         meta.colors.len,
     );
 
@@ -589,12 +589,12 @@ test "next kills a living cell with four living neighbors" {
     const allocator = std.testing.allocator;
     var lcg = MiniLCG.init(4);
 
-    const meta = mod_color.meta_of(mod_color.Theme.default);
+    const meta = mod_color.meta_of(.default);
 
     var color_manager = try mod_color.ColorManager.init(
         allocator,
         &lcg,
-        mod_color.Theme.default,
+        .default,
         meta.colors.len,
     );
 
