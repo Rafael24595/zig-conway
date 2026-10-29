@@ -159,6 +159,38 @@ pub const LinearMatrix = struct {
         return self.color_manager.rand_color();
     }
 
+    /// Switches the state of the cell at the specified coordinates.
+    ///
+    /// If the cell is currently alive, it becomes dead and loses its color.
+    /// If the cell is currently dead, it becomes alive and inherits a color
+    /// based on its living neighbors. If there are no living neighbors, a random color is assigned.
+    pub fn switch_cell(self: *@This(), y: usize, x: usize) void {
+        const mtrx = self.matrix_current.?;
+
+        const row_start = y * self.cols;
+
+        const cursor = row_start + x;
+        const cell = mtrx[cursor];
+        if (cell.status) {
+            mtrx[cursor].status = false;
+            mtrx[cursor].color = null;
+            return;
+        }
+
+        const data = self.count_parents(y, x);
+
+        var compacted: [8][3]u8 = undefined;
+        const colors = compact_parents(&data.parents, &compacted);
+
+        const color = if (colors.len > 0)
+            self.color_manager.mix_or_select(self.dominance, colors)
+        else
+            self.color_manager.rand_color();
+
+        mtrx[cursor].status = true;
+        mtrx[cursor].color = color;
+    }
+
     /// Returns the current matrix buffer, or null if it has not been initialized.
     pub fn vector(self: *@This()) ?[]Cell {
         return self.matrix_current;
@@ -593,4 +625,109 @@ test "next kills a living cell with four living neighbors" {
     try std.testing.expect(!next_cells[4].status);
     try std.testing.expect(next_cells[4].color == null);
     try std.testing.expectEqual(8, matrix.alive_population());
+}
+
+test "switch_cell kills a living cell and clears its color" {
+    const allocator = std.testing.allocator;
+    var lcg = MiniLCG.init(10);
+
+    const meta = mod_color.meta_of(.default);
+
+    var color_manager = try mod_color.ColorManager.init(
+        allocator,
+        &lcg,
+        .default,
+        meta.colors.len,
+    );
+
+    defer color_manager.free();
+
+    var matrix = try create_test_matrix(
+        allocator,
+        &lcg,
+        &color_manager,
+    );
+
+    defer matrix.free();
+
+    const cells = matrix.matrix_current.?;
+
+    cells[4] = .{
+        .status = true,
+        .color = .{ 255, 0, 0 },
+    };
+
+    matrix.switch_cell(1, 1);
+
+    try std.testing.expect(!cells[4].status);
+    try std.testing.expect(cells[4].color == null);
+}
+
+test "switch_cell revives a dead cell with no living neighbors and assigns a random color" {
+    const allocator = std.testing.allocator;
+    var lcg = MiniLCG.init(11);
+
+    const meta = mod_color.meta_of(.default);
+
+    var color_manager = try mod_color.ColorManager.init(
+        allocator,
+        &lcg,
+        .default,
+        meta.colors.len,
+    );
+
+    defer color_manager.free();
+
+    var matrix = try create_test_matrix(
+        allocator,
+        &lcg,
+        &color_manager,
+    );
+
+    defer matrix.free();
+
+    const cells = matrix.matrix_current.?;
+
+    try std.testing.expect(!cells[4].status);
+
+    matrix.switch_cell(1, 1);
+
+    try std.testing.expect(cells[4].status);
+    try std.testing.expect(cells[4].color != null);
+}
+
+test "switch_cell revives a dead cell with living neighbors and inherits color" {
+    const allocator = std.testing.allocator;
+    var lcg = MiniLCG.init(12);
+
+    const meta = mod_color.meta_of(.default);
+
+    var color_manager = try mod_color.ColorManager.init(
+        allocator,
+        &lcg,
+        .default,
+        meta.colors.len,
+    );
+
+    defer color_manager.free();
+
+    var matrix = try create_test_matrix(
+        allocator,
+        &lcg,
+        &color_manager,
+    );
+    defer matrix.free();
+
+    const cells = matrix.matrix_current.?;
+    const neighbor_color = [3]u8{ 0, 255, 0 };
+
+    cells[0] = .{
+        .status = true,
+        .color = neighbor_color,
+    };
+
+    matrix.switch_cell(1, 1);
+
+    try std.testing.expect(cells[4].status);
+    try std.testing.expectEqual(neighbor_color, cells[4].color);
 }
