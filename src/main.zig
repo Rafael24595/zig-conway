@@ -12,12 +12,28 @@ const runtime = terminal_kit.runtime_state;
 const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
 const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
 
+const PanicHandler = terminal_kit.panic_handler.PanicHandler;
+
 const configuration = @import("configuration/configuration.zig");
 
 const debug = @import("app/debug.zig");
 const RenderContext = @import("app/render_context.zig").RenderContext;
 
 const color = @import("domain/color.zig");
+
+pub const panic = PanicHandler(cleanup_terminal).panic;
+
+fn cleanup_terminal() void {
+    console.disable_raw_mode();
+
+    const stdout = std.fs.File.stdout();
+
+    stdout.writeAll(
+        console.SHOW_CURSOR ++
+            console.CLEAN_ALL ++
+            console.RESET_CURSOR,
+    ) catch {};
+}
 
 /// Initializes application resources, configures the terminal, and starts
 /// the rendering loop.
