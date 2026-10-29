@@ -2,11 +2,21 @@ const std = @import("std");
 
 const Configuration = @import("../configuration/configuration.zig").Configuration;
 
+/// Represents the padding required for rendering the matrix, including
+/// space for debug output, inheritance information, and control instructions.
 pub const Padding = struct {
+    /// Number of lines to reserve at the top of the terminal for debug output and inheritance information.
     upper: usize = 0,
+    /// Number of lines to reserve at the bottom of the terminal for control instructions.
     lower: usize = 0,
 };
 
+/// Calculates the required padding based on the provided configuration.
+///
+/// The padding is determined by the following rules:
+/// - If debug output is enabled, reserve 4 lines at the top.
+/// - If inheritance information is enabled, reserve an additional line at the top.
+/// - If control instructions are enabled, reserve 1 line at the bottom.
 pub fn calculate_padding(config: *const Configuration) Padding {
     var padding = Padding{};
 
