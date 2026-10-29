@@ -41,7 +41,7 @@ pub const RenderContext = struct {
         config: *const configuration.Configuration,
         printer: *Printer,
         lcg: *MiniLCG,
-        colorManager: *color.ColorManager,
+        color_manager: *color.ColorManager,
         padding: Padding,
     ) !void {
         const space = padding.upper + padding.lower;
@@ -52,7 +52,7 @@ pub const RenderContext = struct {
         self.matrix = LinearMatrix.init(
             allocator,
             lcg,
-            colorManager,
+            color_manager,
             config.alive_probability,
             config.mutation_generation,
         );
