@@ -3,6 +3,7 @@ test {
 
     _ = @import("configuration/configuration.zig");
 
+    _ = @import("domain/board.zig");
     _ = @import("domain/color.zig");
     _ = @import("domain/matrix.zig");
 
