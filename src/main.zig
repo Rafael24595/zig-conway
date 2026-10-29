@@ -165,6 +165,7 @@ inline fn run_render_cycle(
     color_manager: *color.ColorManager,
 ) !void {
     const winsize = try console.winsize();
+    const padding = alignment.calculate_padding(config);
 
     var context: RenderContext = undefined;
 
@@ -175,6 +176,7 @@ inline fn run_render_cycle(
         printer,
         lcg,
         color_manager,
+        padding,
     );
 
     defer context.deinit();

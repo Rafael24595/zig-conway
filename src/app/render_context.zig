@@ -11,6 +11,7 @@ const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
 const configuration = @import("../configuration/configuration.zig");
 
 const LinearMatrixPrinter = @import("../io/matrix_printer.zig").LinearMatrixPrinter;
+const Padding = @import("../io/alignment.zig").Padding;
 
 const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 const color = @import("../domain/color.zig");
@@ -41,8 +42,9 @@ pub const RenderContext = struct {
         printer: *Printer,
         lcg: *MiniLCG,
         colorManager: *color.ColorManager,
+        padding: Padding,
     ) !void {
-        const space = calculate_padding(config);
+        const space = padding.upper + padding.lower;
 
         const cols = winsize.cols;
         const rows = winsize.rows - space;
@@ -82,60 +84,3 @@ pub const RenderContext = struct {
         self.matrix_printer.free();
     }
 };
-
-inline fn calculate_padding(config: *const configuration.Configuration) usize {
-    var space: usize = 0;
-    if (config.debug) {
-        space += 4;
-
-        if (config.inheritance) {
-            space += 1;
-        }
-    }
-
-    if (config.controls) {
-        space += 1;
-    }
-
-    return space;
-}
-
-test "calculate_padding returns zero when all options are disabled" {
-    const config = configuration.Configuration{
-        .debug = false,
-        .inheritance = false,
-        .controls = false,
-    };
-
-    try std.testing.expectEqual(0, calculate_padding(&config));
-}
-
-test "calculate_padding reserves space for debug output" {
-    const config = configuration.Configuration{
-        .debug = true,
-        .inheritance = false,
-        .controls = false,
-    };
-
-    try std.testing.expectEqual(4, calculate_padding(&config));
-}
-
-test "calculate_padding reserves space for inheritance information" {
-    const config = configuration.Configuration{
-        .debug = true,
-        .inheritance = true,
-        .controls = false,
-    };
-
-    try std.testing.expectEqual(5, calculate_padding(&config));
-}
-
-test "calculate_padding reserves space for debug output and controls" {
-    const config = configuration.Configuration{
-        .debug = true,
-        .inheritance = true,
-        .controls = true,
-    };
-
-    try std.testing.expectEqual(6, calculate_padding(&config));
-}
