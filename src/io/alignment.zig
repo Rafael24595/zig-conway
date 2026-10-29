@@ -7,7 +7,7 @@ pub const Padding = struct {
     lower: usize = 0,
 };
 
-pub inline fn calculate_padding(config: *const Configuration) Padding {
+pub fn calculate_padding(config: *const Configuration) Padding {
     var padding = Padding{};
 
     if (config.debug) {
