@@ -20,8 +20,6 @@ const configuration = @import("configuration/configuration.zig");
 const debug = @import("app/debug.zig");
 
 const GameState = @import("app/game_state.zig").GameState;
-
-const render_context = @import("app/render_context.zig");
 const RenderContext = @import("app/render_context.zig").RenderContext;
 
 const BoardViewport = @import("domain/board.zig").BoardViewport;
