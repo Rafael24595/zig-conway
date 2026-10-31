@@ -100,11 +100,12 @@ pub fn print_debug(
 ///
 /// Returns an error if printing the controls fails.
 pub fn print_controls(printer: *Printer) !void {
-    try printer.printf("\nPause: [{s}] | Restart: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Exit: [{s}]", .{
+    try printer.printf("\nPause: [{s}] | Restart: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Toggle Cell: [{s}] | Exit: [{s}]", .{
         "p, space",
         "r, backspace",
         "+",
         "-",
+        "left click",
         "q, ctrl+c",
     });
 }
