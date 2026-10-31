@@ -6,7 +6,7 @@ Customize the simulation with different cell symbols, color palettes, color inhe
 
 ![Conway's Game of Life](.img/conway.gif)
 
-> **Terminal compatibility:** The project has been tested with Windows Terminal 1.23.13503.0. Character rendering and performance may vary across terminal emulators. If RGB rendering is slow, try ANSI mode or disable inheritance mode.
+> **Terminal compatibility:** The project has been tested with Windows Terminal 1.23.13503.0. Character rendering and performance may vary across terminal emulators. If RGB rendering is slow, try ANSI mode or disable inheritance mode. Mouse interaction requires terminal mouse-reporting support. Keyboard input, character rendering, and mouse behavior may vary across terminal emulators.
 
 ## Features
 
@@ -19,12 +19,14 @@ Customize the simulation with different cell symbols, color palettes, color inhe
 - **Mutation:** Periodically invert a small proportion of cells to introduce new patterns. Set a negative mutation generation to disable mutations.
 - **Debug mode:** Inspect runtime configuration, matrix dimensions, population, generation, and memory usage.
 - **Interactive controls:** Pause, reload, adjust the frame delay, or exit while the simulation is running.
+- **Mouse interaction:** Click cells to toggle their state while the simulation is running.
 - **Terminal cleanup:** Restore the cursor and terminal state during normal shutdown.
 
 ## Requirements
 
 - Zig compiler 0.15.1 (tested version).
 - A terminal emulator with ANSI escape-sequence support.
+- Mouse reporting support in the terminal emulator for mouse interaction.
 - UTF-8 support for Unicode symbol themes.
 
 ## Build
@@ -230,18 +232,23 @@ Enable debug output with `-d` to inspect runtime information, including:
 
 ## Interactive Controls
 
-The simulation accepts keyboard input while running.
+The simulation accepts keyboard and mouse input while running.
 
-| Key | Action |
+| Input | Action |
 |---|---|
 | `p`, `Space` | Toggle pause and resume. The current frame remains visible while paused. |
 | `r`, `Backspace` | Request a matrix reload and reset the start timestamp. The random generator is not reinitialized. |
 | `+` | Increase the frame delay by 10 ms, up to 3000 ms. |
 | `-` | Decrease the frame delay by 10 ms, down to 0 ms. |
 | `q`, `Ctrl+C` | Request a clean exit. |
+| Left mouse button | Toggle the cell under the pointer, if it is within the board. |
 
-Input is processed on a separate thread, allowing the render loop to continue while waiting for key presses. Runtime flags use atomic operations to coordinate input and rendering.
+Input is processed on a separate thread, allowing the render loop to continue while waiting for input. Mouse events are decoded from terminal SGR sequences, and runtime flags use atomic operations to coordinate input and rendering.
 
 ## Shutdown and Signal Handling
 
-The application installs a signal handler and requests shutdown when an interrupt is received. During normal shutdown, cleanup routines attempt to restore the cursor and clear terminal output. Exact behavior may depend on the operating system, terminal emulator, and how the process terminates.
+The application installs a signal handler and requests shutdown when an interrupt is received. During normal shutdown, deferred cleanup routines attempt to restore raw input mode, disable ANSI input and mouse reporting, restore cursor visibility, and clear terminal output.
+
+A custom panic handler also attempts to restore terminal settings before delegating to Zig's default panic handler. Recovery is best-effort and may not prevent terminal state from being left partially modified, especially if a panic occurs on another thread while rendering is in progress.
+
+Exact behavior may depend on the operating system, terminal emulator, and how the process terminates.
