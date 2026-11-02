@@ -6,7 +6,7 @@ const Counter = terminal_kit.frame.Counter;
 
 const console = terminal_kit.console;
 const Printer = terminal_kit.printer.Printer;
-const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+const SplitMix64 = terminal_kit.splitmix64.SplitMix64;
 
 const configuration = @import("../configuration/configuration.zig");
 
@@ -40,7 +40,7 @@ pub const RenderContext = struct {
         winsize: console.WinSize,
         config: *const configuration.Configuration,
         printer: *Printer,
-        lcg: *MiniLCG,
+        rng: *SplitMix64,
         color_manager: *color.ColorManager,
         padding: Padding,
     ) !void {
@@ -51,7 +51,7 @@ pub const RenderContext = struct {
 
         self.matrix = LinearMatrix.init(
             allocator,
-            lcg,
+            rng,
             color_manager,
             config.alive_probability,
             config.mutation_generation,
