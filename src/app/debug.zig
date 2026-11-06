@@ -34,22 +34,13 @@ pub fn print_debug(
     const rows = matrix.rows_len();
     const area = rows * cols;
 
-    var end_ms = std.time.milliTimestamp();
-    if (state.pause.load(.acquire)) {
-        end_ms = state.pause_timestamp.load(.acquire);
-    }
-
-    const start_timestamp = state.start_timestamp.load(.acquire);
-
-    const time = try kit_time.milliseconds_to_time(allocator, end_ms - start_timestamp, null);
+    const time = try kit_time.milliseconds_to_time(allocator, state.get_runtime(), null);
     defer allocator.free(time);
 
     var col = @tagName(config.color);
     if (config.inheritance) {
         col = "*Inheritance";
     }
-
-    const paused = state.pause.load(.acquire);
 
     var mut: []const u8 = "disabled";
     if (matrix.mutation_generation() >= 0) {
@@ -67,7 +58,7 @@ pub fn print_debug(
     try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes | Paused {any} | FPS: {d} \n", .{
         persistent.bytes(),
         scratch.bytes(),
-        paused,
+        state.is_paused(),
         context.counter.get_frame_rate(std.time.ms_per_s),
     });
 
@@ -81,7 +72,7 @@ pub fn print_debug(
     });
 
     try printer.printf("Speed: {d}ms | Probability: {d}% | Time: {s} | Population: {d} | Mutation: {s} \n", .{
-        state.speed_ms.load(.acquire),
+        state.get_speed(),
         config.alive_probability,
         time,
         matrix.alive_population(),

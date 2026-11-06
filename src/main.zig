@@ -76,10 +76,10 @@ pub fn main() !void {
         &printer,
     );
 
-    var state = runtime.RuntimeState{};
-
-    state.start_timestamp.store(config.start_ms, .release);
-    state.speed_ms.store(config.milliseconds, .release);
+    var state = runtime.RuntimeState.init(
+        config.start_ms,
+        config.milliseconds,
+    );
 
     var game_state = GameState{};
 
@@ -232,7 +232,7 @@ inline fn run_render_cycle(
 
         try context.matrix_printer.print(&context.matrix);
 
-        if (!state.pause.load(.acquire)) {
+        if (!state.is_paused()) {
             try context.matrix.next();
         }
 
@@ -240,7 +240,7 @@ inline fn run_render_cycle(
             try debug.print_controls(printer);
         }
 
-        const speed = state.speed_ms.load(.acquire);
+        const speed = state.get_speed();
         try state.wait_for_frame(speed * std.time.ns_per_ms);
 
         printer.reset();
