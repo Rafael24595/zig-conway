@@ -241,6 +241,8 @@ The simulation accepts keyboard and mouse input while running.
 | `-` | Decrease the frame delay by 10 ms, down to 0 ms. |
 | `r`, `Backspace` | Request a matrix reload and reset the start timestamp. The random generator is not reinitialized. |
 | Left mouse button | Toggle the cell under the pointer, if it is within the board. |
+| `,` | Scroll the help output horizontally to the left. |
+| `.` | Scroll the help output horizontally to the right. |
 | `/` | Toggle debug output on and off. |
 | `?` | Toggle controls output on and off. |
 | `q`, `Ctrl+C` | Request a clean exit. |
