@@ -6,6 +6,8 @@ const terminal_kit = @import("terminal_kit");
 
 const kit_time = terminal_kit.time;
 
+const console = terminal_kit.console;
+
 const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
 const RuntimeState = terminal_kit.runtime_state.RuntimeState;
 const Printer = terminal_kit.printer.Printer;
@@ -50,53 +52,141 @@ pub fn print_debug(
         });
     }
 
-    try printer.printf("{}: {s}\n", .{
-        build.name,
-        build.version,
-    });
+    const header = try printer.format(
+        "{}: {s}",
+        .{
+            build.name,
+            build.version,
+        },
+    );
 
-    try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes | Paused {any} | FPS: {d} \n", .{
-        persistent.bytes(),
-        scratch.bytes(),
-        state.is_paused(),
-        context.counter.get_frame_rate(std.time.ms_per_s),
-    });
+    const memory = try printer.format(
+        "Persistent memory: {d} bytes | " ++
+            "Scratch memory: {d} bytes | " ++
+            "Paused {any} | " ++
+            "FPS: {d}",
+        .{
+            persistent.bytes(),
+            scratch.bytes(),
+            state.is_paused(),
+            context.counter.get_frame_rate(std.time.ms_per_s),
+        },
+    );
 
-    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Symbol: {s} | Color: {s} \n", .{
-        config.seed,
-        area,
-        cols,
-        rows,
-        @tagName(config.symbol_mode),
-        col,
-    });
+    const runtime_1 = try printer.format(
+        "Seed: {d} | " ++
+            "Matrix: {d} | " ++
+            "Columns: {d} | " ++
+            "Rows: {d} | " ++
+            "Symbol: {s} | " ++
+            "Color: {s}",
+        .{
+            config.seed,
+            area,
+            cols,
+            rows,
+            @tagName(config.symbol_mode),
+            col,
+        },
+    );
 
-    try printer.printf("Speed: {d}ms | Probability: {d}% | Time: {s} | Population: {d} | Mutation: {s} \n", .{
-        state.get_speed(),
-        config.alive_probability,
-        time,
-        matrix.alive_population(),
-        mut,
-    });
+    const runtime_2 = try printer.format(
+        "Speed: {d}ms | " ++
+            "Probability: {d}% | " ++
+            "Time: {s} | " ++
+            "Population: {d} | " ++
+            "Mutation: {s}",
+        .{
+            state.get_speed(),
+            config.alive_probability,
+            time,
+            matrix.alive_population(),
+            mut,
+        },
+    );
 
+    var runtime_3: []u8 = "";
     if (config.inheritance) {
-        try printer.printf("Inheritance mode: {s} | Inheritance factions: {d} \n", .{
-            @tagName(config.inheritance_mode),
-            config.inheritance_faction,
-        });
+        runtime_3 = try printer.format(
+            "Inheritance mode: {s} | " ++
+                "Inheritance factions: {d}",
+            .{
+                @tagName(config.inheritance_mode),
+                config.inheritance_faction,
+            },
+        );
+
+        runtime_3 = try printer.format(
+            "{s}{s}\n",
+            .{
+                console.CLEAN_LINE,
+                runtime_3.text,
+            },
+        );
     }
+
+    try printer.printf(
+        "{s}{s}\n" ++
+            "{s}{s}\n" ++
+            "{s}{s}\n" ++
+            "{s}{s}\n" ++
+            "{s}",
+        .{
+            console.CLEAN_LINE,
+            header,
+            console.CLEAN_LINE,
+            memory,
+            console.CLEAN_LINE,
+            runtime_1,
+            console.CLEAN_LINE,
+            runtime_2,
+            runtime_3,
+        },
+    );
 }
 
 /// Prints the keyboard shortcuts available to control the application.
 ///
 /// Returns an error if printing the controls fails.
 pub fn print_controls(printer: *Printer) !void {
-    try printer.printf("\nPause: [{s}] | Restart: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Toggle Cell: [{s}] | Exit: [{s}]", .{
-        "p, space",
-        "r, backspace",
-        "+",
-        "-",
-        "left click",
-        "q, ctrl+c",
-    });
+    const app_controls = try printer.format(
+        "Pause: [{s}] | " ++
+            "Inc sleep: [{s}] | " ++
+            "Dec sleep: [{s}] | " ++
+            "Restart: [{s}] | " ++
+            "Toggle Cell: [{s}]",
+        .{
+            "p, space",
+            "+",
+            "-",
+            "r, backspace",
+            "left click",
+        },
+    );
+
+    const trm_controls = try printer.format(
+        "Scroll left: [{s}] | " ++
+            "Scroll right: [{s}] | " ++
+            "Show debug: [{s}] | " ++
+            "Show controls: [{s}] | " ++
+            "Exit: [{s}]",
+        .{
+            ",",
+            ".",
+            "/",
+            "?",
+            "q, ctrl+c",
+        },
+    );
+
+    try printer.printf(
+        "\n{s}{s}" ++
+            "\n{s}{s}",
+        .{
+            console.CLEAN_LINE,
+            app_controls,
+            console.CLEAN_LINE,
+            trm_controls,
+        },
+    );
 }

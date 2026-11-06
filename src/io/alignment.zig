@@ -34,7 +34,7 @@ pub fn calculate_padding(
     }
 
     if (state.show_controls()) {
-        padding.lower += 1;
+        padding.lower += 2;
     }
 
     return padding;
