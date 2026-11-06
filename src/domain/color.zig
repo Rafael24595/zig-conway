@@ -2,7 +2,7 @@ const std = @import("std");
 
 const terminal_kit = @import("terminal_kit");
 
-const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+const SplitMix64 = terminal_kit.splitmix64.SplitMix64;
 
 const kit_color = terminal_kit.color;
 
@@ -127,7 +127,7 @@ pub fn meta_of(m: Theme) ThemeMeta {
 /// Returns an allocated slice containing the selected colors.
 pub fn sample(
     allocator: std.mem.Allocator,
-    lcg: *MiniLCG,
+    rng: *SplitMix64,
     size: usize,
     base: []const kit_color.Color,
 ) ![]const kit_color.Color {
@@ -140,7 +140,7 @@ pub fn sample(
         indexes[i] = i;
     }
 
-    lcg.shuffle(usize, indexes);
+    rng.shuffle(usize, indexes);
 
     var table_rng = try allocator.alloc(kit_color.Color, count);
     for (0..count) |i| {
@@ -157,7 +157,7 @@ pub const ColorManager = struct {
     allocator: std.mem.Allocator,
 
     /// Random number generator used for color selection.
-    lcg: *MiniLCG,
+    rng: *SplitMix64,
 
     /// RGB values available for selection.
     table: [][3]u8,
@@ -165,7 +165,7 @@ pub const ColorManager = struct {
     /// Initializes the color manager from the provided palette.
     pub fn init(
         allocator: std.mem.Allocator,
-        lcg: *MiniLCG,
+        rng: *SplitMix64,
         theme: Theme,
         size: usize,
     ) !@This() {
@@ -173,7 +173,7 @@ pub const ColorManager = struct {
 
         const table = try sample(
             allocator,
-            lcg,
+            rng,
             size,
             meta.colors,
         );
@@ -187,7 +187,7 @@ pub const ColorManager = struct {
 
         return ColorManager{
             .allocator = allocator,
-            .lcg = lcg,
+            .rng = rng,
             .table = table_rgb,
         };
     }
@@ -201,7 +201,7 @@ pub const ColorManager = struct {
     /// Returns a randomly selected color from the configured palette.
     pub fn rand_color(self: *@This()) [3]u8 {
         const table = self.table;
-        const idx = self.lcg.rand_in_range(0, table.len - 1);
+        const idx = self.rng.rand_in_range(0, table.len - 1);
         return table[idx];
     }
 
@@ -213,7 +213,7 @@ pub const ColorManager = struct {
             return kit_color.rgb_of(kit_color.Color.white);
         }
 
-        if (self.lcg.float() < sel_prov) {
+        if (self.rng.float() < sel_prov) {
             return self.select(colors);
         }
 
@@ -221,7 +221,7 @@ pub const ColorManager = struct {
     }
 
     inline fn select(self: *@This(), colors: []const [3]u8) [3]u8 {
-        const idx = self.lcg.rand_in_range(0, colors.len - 1);
+        const idx = self.rng.rand_in_range(0, colors.len - 1);
         return colors[idx];
     }
 };
@@ -276,7 +276,7 @@ test "correct RGB values for known colors" {
 
 test "sample returns correct size and no duplicates" {
     var allocator = std.heap.page_allocator;
-    var rng = MiniLCG.init(123);
+    var rng = SplitMix64.init(123);
 
     const base = [_]kit_color.Color{ .red, .green, .blue, .yellow };
     const size: usize = 3;
@@ -291,7 +291,7 @@ test "sample returns correct size and no duplicates" {
 
 test "sample clamps size to base length" {
     var allocator = std.heap.page_allocator;
-    var rng = MiniLCG.init(42);
+    var rng = SplitMix64.init(42);
 
     const base = [_]kit_color.Color{ .red, .green };
     const size = 5;
@@ -310,8 +310,8 @@ test "sample is deterministic with same seed" {
     const base = [_]kit_color.Color{ .red, .green, .blue, .yellow };
     const size = 3;
 
-    var rng1 = MiniLCG.init(777);
-    var rng2 = MiniLCG.init(777);
+    var rng1 = SplitMix64.init(777);
+    var rng2 = SplitMix64.init(777);
 
     const result1 = try sample(allocator, &rng1, size, base[0..]);
     const result2 = try sample(allocator, &rng2, size, base[0..]);
@@ -323,7 +323,7 @@ test "sample is deterministic with same seed" {
 
 test "sample handles empty base" {
     var allocator = std.heap.page_allocator;
-    var rng = MiniLCG.init(999);
+    var rng = SplitMix64.init(999);
 
     const base: [0]kit_color.Color = undefined;
     const size = 3;

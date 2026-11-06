@@ -5,19 +5,44 @@ const terminal_kit = @import("terminal_kit");
 
 const signals = terminal_kit.signals;
 const console = terminal_kit.console;
+const kit_event = terminal_kit.event;
 const Printer = terminal_kit.printer.Printer;
 
 const runtime = terminal_kit.runtime_state;
 
 const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
-const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+const SplitMix64 = terminal_kit.splitmix64.SplitMix64;
+
+const PanicHandler = terminal_kit.panic_handler.PanicHandler;
 
 const configuration = @import("configuration/configuration.zig");
 
 const debug = @import("app/debug.zig");
+
+const GameState = @import("app/game_state.zig").GameState;
 const RenderContext = @import("app/render_context.zig").RenderContext;
 
+const BoardViewport = @import("domain/board.zig").BoardViewport;
+
 const color = @import("domain/color.zig");
+
+const alignment = @import("io/alignment.zig");
+
+pub const panic = PanicHandler(cleanup_terminal).panic;
+
+fn cleanup_terminal() void {
+    console.disable_mouse();
+    console.disable_ansi_input();
+    console.disable_raw_mode();
+
+    const stdout = std.fs.File.stdout();
+
+    stdout.writeAll(
+        console.SHOW_CURSOR ++
+            console.CLEAN_ALL ++
+            console.RESET_CURSOR,
+    ) catch {};
+}
 
 /// Initializes application resources, configures the terminal, and starts
 /// the rendering loop.
@@ -51,10 +76,14 @@ pub fn main() !void {
         &printer,
     );
 
-    var state = runtime.RuntimeState{};
+    var state = runtime.RuntimeState.init(
+        config.start_ms,
+        config.milliseconds,
+        config.debug,
+        config.controls,
+    );
 
-    state.start_timestamp.store(config.start_ms, .release);
-    state.speed_ms.store(config.milliseconds, .release);
+    var game_state = GameState{};
 
     try console.enable_ansi();
     try console.enable_utf8();
@@ -62,8 +91,15 @@ pub fn main() !void {
     try console.enable_raw_mode();
     defer console.disable_raw_mode();
 
+    try console.enable_ansi_input();
+    defer console.disable_ansi_input();
+
+    try console.enable_mouse();
+    defer console.disable_mouse();
+
     try run(
         &state,
+        &game_state,
         &persistent,
         &scratch,
         &config,
@@ -75,6 +111,7 @@ pub fn main() !void {
 /// until termination is requested.
 pub fn run(
     state: *runtime.RuntimeState,
+    game_state: *GameState,
     persistent: *AllocatorTracer,
     scratch: *AllocatorTracer,
     config: *const configuration.Configuration,
@@ -90,11 +127,11 @@ pub fn run(
 
     const allocator = persistent.allocator();
 
-    var lcg = MiniLCG.init(config.seed);
+    var rng = SplitMix64.init(config.seed);
 
     var color_manager = try color.ColorManager.init(
         allocator,
-        &lcg,
+        &rng,
         config.inheritance_mode,
         config.inheritance_faction,
     );
@@ -112,7 +149,7 @@ pub fn run(
     var input_thread = try std.Thread.spawn(
         .{},
         run_input_loop,
-        .{state},
+        .{ state, game_state },
     );
 
     defer input_thread.join();
@@ -125,9 +162,10 @@ pub fn run(
             persistent,
             scratch,
             state,
+            game_state,
             config,
             printer,
-            &lcg,
+            &rng,
             &color_manager,
         );
     }
@@ -143,12 +181,18 @@ inline fn run_render_cycle(
     persistent: *AllocatorTracer,
     scratch: *AllocatorTracer,
     state: *runtime.RuntimeState,
+    game_state: *GameState,
     config: *const configuration.Configuration,
     printer: *Printer,
-    lcg: *MiniLCG,
+    rng: *SplitMix64,
     color_manager: *color.ColorManager,
 ) !void {
     const winsize = try console.winsize();
+
+    const padding = alignment.calculate_padding(
+        config,
+        state,
+    );
 
     var context: RenderContext = undefined;
 
@@ -157,39 +201,68 @@ inline fn run_render_cycle(
         winsize,
         config,
         printer,
-        lcg,
+        rng,
         color_manager,
+        padding,
     );
 
     defer context.deinit();
 
+    const board = BoardViewport{
+        .y = padding.upper,
+        .cols = context.matrix.cols,
+        .rows = context.matrix.rows,
+    };
+
     try printer.print(console.CLEAN_CONSOLE);
 
     while (!runtime.should_exit(state) and !runtime.should_reload(state)) {
+        if (game_state.consume_coord()) |coord| {
+            if (board.to_board(coord.y, coord.x)) |point| {
+                context.matrix.switch_cell(point.y, point.x);
+            }
+        }
+
         try printer.print(console.RESET_CURSOR);
 
-        if (config.debug) {
-            try debug.print_debug(
+        var max_cursor: usize = 0;
+        const target_cursor = state.get_help_cursor();
+
+        if (state.show_debug()) {
+            const result = try debug.print_debug(
                 state,
                 persistent,
                 scratch,
                 config,
                 printer,
                 &context,
+                target_cursor,
             );
+
+            max_cursor = @max(max_cursor, result);
         }
 
         try context.matrix_printer.print(&context.matrix);
 
-        if (!state.pause.load(.acquire)) {
+        if (!state.is_paused()) {
             try context.matrix.next();
         }
 
-        if (config.controls) {
-            try debug.print_controls(printer);
+        if (state.show_controls()) {
+            const result = try debug.print_controls(
+                printer,
+                &context,
+                target_cursor,
+            );
+
+            max_cursor = @max(max_cursor, result);
         }
 
-        const speed = state.speed_ms.load(.acquire);
+        state.set_help_cursor(
+            @min(target_cursor, max_cursor),
+        );
+
+        const speed = state.get_speed();
         try state.wait_for_frame(speed * std.time.ns_per_ms);
 
         printer.reset();
@@ -202,8 +275,12 @@ inline fn run_render_cycle(
     }
 }
 
-fn run_input_loop(state: *runtime.RuntimeState) !void {
+fn run_input_loop(
+    state: *runtime.RuntimeState,
+    game_state: *GameState,
+) !void {
     const stdin = std.fs.File.stdin();
+    var mouse_parser = kit_event.MouseParser{};
 
     while (!runtime.should_exit(state)) {
         var buf: [1]u8 = undefined;
@@ -213,19 +290,47 @@ fn run_input_loop(state: *runtime.RuntimeState) !void {
             continue;
         }
 
-        switch (buf[0]) {
+        const byte = buf[0];
+
+        switch (mouse_parser.feed(byte)) {
+            .ignored => {},
+            .pending, .invalid => continue,
+            .event => |event| {
+                if (event.pressed and event.button == 0) {
+                    game_state.request_coord(event.row, event.col);
+                }
+
+                continue;
+            },
+        }
+
+        switch (byte) {
             'p', 'P', console.SPACE => {
                 state.toggle_pause();
-            },
-            'r', 'R', console.BACKSPACE, console.DEL => {
-                state.start_timestamp.store(std.time.milliTimestamp(), .release);
-                state.request_reload();
             },
             '+' => {
                 state.mod_speed(10);
             },
             '-' => {
                 state.mod_speed(-10);
+            },
+            'r', 'R', console.BACKSPACE, console.DEL => {
+                state.set_start_timestamp(std.time.milliTimestamp());
+                state.request_reload();
+            },
+            ',' => {
+                state.dec_help_cursor();
+            },
+            '.' => {
+                state.inc_help_cursor();
+            },
+            '/' => {
+                state.toggle_debug();
+                state.request_reload();
+            },
+            '?' => {
+                state.toggle_controls();
+                state.request_reload();
             },
             'q', 'Q', console.CTRL_C => {
                 state.request_exit();

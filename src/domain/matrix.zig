@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const MiniLCG = @import("terminal_kit").mini_lcg.MiniLCG;
+const SplitMix64 = @import("terminal_kit").splitmix64.SplitMix64;
 
 const mod_color = @import("color.zig");
 
@@ -28,7 +28,7 @@ pub const LinearMatrix = struct {
     allocator: std.mem.Allocator,
 
     /// Random number generator used during matrix initialization and mutation.
-    lcg: *MiniLCG,
+    rng: *SplitMix64,
     /// Manages the colors assigned to cells.
     color_manager: *mod_color.ColorManager,
 
@@ -59,14 +59,14 @@ pub const LinearMatrix = struct {
     /// Initializes a matrix with the supplied dependencies and settings.
     pub fn init(
         allocator: std.mem.Allocator,
-        lcg: *MiniLCG,
+        rng: *SplitMix64,
         color_manager: *mod_color.ColorManager,
         alive: f32,
         mut_gen: i16,
     ) LinearMatrix {
         return LinearMatrix{
             .allocator = allocator,
-            .lcg = lcg,
+            .rng = rng,
             .color_manager = color_manager,
             .alive_probability = alive,
             .mut_gen = mut_gen,
@@ -105,7 +105,7 @@ pub const LinearMatrix = struct {
     fn add_status(self: *@This()) void {
         const mtrx = self.matrix_current.?;
         for (mtrx) |*cell| {
-            const alive = self.lcg.float() < self.alive_probability;
+            const alive = self.rng.float() < self.alive_probability;
             if (alive) {
                 self.population += 1;
             }
@@ -157,6 +157,38 @@ pub const LinearMatrix = struct {
         }
 
         return self.color_manager.rand_color();
+    }
+
+    /// Switches the state of the cell at the specified coordinates.
+    ///
+    /// If the cell is currently alive, it becomes dead and loses its color.
+    /// If the cell is currently dead, it becomes alive and inherits a color
+    /// based on its living neighbors. If there are no living neighbors, a random color is assigned.
+    pub fn switch_cell(self: *@This(), y: usize, x: usize) void {
+        const mtrx = self.matrix_current.?;
+
+        const row_start = y * self.cols;
+
+        const cursor = row_start + x;
+        const cell = mtrx[cursor];
+        if (cell.status) {
+            mtrx[cursor].status = false;
+            mtrx[cursor].color = null;
+            return;
+        }
+
+        const data = self.count_parents(y, x);
+
+        var compacted: [8][3]u8 = undefined;
+        const colors = compact_parents(&data.parents, &compacted);
+
+        const color = if (colors.len > 0)
+            self.color_manager.mix_or_select(self.dominance, colors)
+        else
+            self.color_manager.rand_color();
+
+        mtrx[cursor].status = true;
+        mtrx[cursor].color = color;
     }
 
     /// Returns the current matrix buffer, or null if it has not been initialized.
@@ -323,8 +355,8 @@ pub const LinearMatrix = struct {
         const mutation_count: usize = @intFromFloat(cells * 0.001);
 
         for (0..@max(1, mutation_count)) |_| {
-            const y = self.lcg.rand_in_range(0, self.rows - 1);
-            const x = self.lcg.rand_in_range(0, self.cols - 1);
+            const y = self.rng.rand_in_range(0, self.rows - 1);
+            const x = self.rng.rand_in_range(0, self.cols - 1);
 
             const cursor = y * self.cols + x;
 
@@ -369,12 +401,12 @@ fn compact_parents(parents: *const [8]?[3]u8, buffer: *[8][3]u8) []const [3]u8 {
 
 fn create_test_matrix(
     allocator: std.mem.Allocator,
-    lcg: *MiniLCG,
+    rng: *SplitMix64,
     color_manager: *mod_color.ColorManager,
 ) !LinearMatrix {
     var matrix = LinearMatrix.init(
         allocator,
-        lcg,
+        rng,
         color_manager,
         0.0,
         -1,
@@ -439,14 +471,14 @@ test "compact_parents returns an empty slice when there are no parents" {
 
 test "next births a dead cell with three living neighbors" {
     const allocator = std.testing.allocator;
-    var lcg = MiniLCG.init(1);
+    var rng = SplitMix64.init(1);
 
-    const meta = mod_color.meta_of(mod_color.Theme.default);
+    const meta = mod_color.meta_of(.default);
 
     var color_manager = try mod_color.ColorManager.init(
         allocator,
-        &lcg,
-        mod_color.Theme.default,
+        &rng,
+        .default,
         meta.colors.len,
     );
 
@@ -454,7 +486,7 @@ test "next births a dead cell with three living neighbors" {
 
     var matrix = try create_test_matrix(
         allocator,
-        &lcg,
+        &rng,
         &color_manager,
     );
 
@@ -477,14 +509,14 @@ test "next births a dead cell with three living neighbors" {
 
 test "next preserves a living cell with two living neighbors" {
     const allocator = std.testing.allocator;
-    var lcg = MiniLCG.init(2);
+    var rng = SplitMix64.init(2);
 
-    const meta = mod_color.meta_of(mod_color.Theme.default);
+    const meta = mod_color.meta_of(.default);
 
     var color_manager = try mod_color.ColorManager.init(
         allocator,
-        &lcg,
-        mod_color.Theme.default,
+        &rng,
+        .default,
         meta.colors.len,
     );
 
@@ -492,7 +524,7 @@ test "next preserves a living cell with two living neighbors" {
 
     var matrix = try create_test_matrix(
         allocator,
-        &lcg,
+        &rng,
         &color_manager,
     );
 
@@ -517,14 +549,14 @@ test "next preserves a living cell with two living neighbors" {
 
 test "next kills an isolated living cell" {
     const allocator = std.testing.allocator;
-    var lcg = MiniLCG.init(3);
+    var rng = SplitMix64.init(3);
 
-    const meta = mod_color.meta_of(mod_color.Theme.default);
+    const meta = mod_color.meta_of(.default);
 
     var color_manager = try mod_color.ColorManager.init(
         allocator,
-        &lcg,
-        mod_color.Theme.default,
+        &rng,
+        .default,
         meta.colors.len,
     );
 
@@ -532,7 +564,7 @@ test "next kills an isolated living cell" {
 
     var matrix = try create_test_matrix(
         allocator,
-        &lcg,
+        &rng,
         &color_manager,
     );
     defer matrix.free();
@@ -555,14 +587,14 @@ test "next kills an isolated living cell" {
 
 test "next kills a living cell with four living neighbors" {
     const allocator = std.testing.allocator;
-    var lcg = MiniLCG.init(4);
+    var rng = SplitMix64.init(4);
 
-    const meta = mod_color.meta_of(mod_color.Theme.default);
+    const meta = mod_color.meta_of(.default);
 
     var color_manager = try mod_color.ColorManager.init(
         allocator,
-        &lcg,
-        mod_color.Theme.default,
+        &rng,
+        .default,
         meta.colors.len,
     );
 
@@ -570,7 +602,7 @@ test "next kills a living cell with four living neighbors" {
 
     var matrix = try create_test_matrix(
         allocator,
-        &lcg,
+        &rng,
         &color_manager,
     );
 
@@ -593,4 +625,109 @@ test "next kills a living cell with four living neighbors" {
     try std.testing.expect(!next_cells[4].status);
     try std.testing.expect(next_cells[4].color == null);
     try std.testing.expectEqual(8, matrix.alive_population());
+}
+
+test "switch_cell kills a living cell and clears its color" {
+    const allocator = std.testing.allocator;
+    var rng = SplitMix64.init(10);
+
+    const meta = mod_color.meta_of(.default);
+
+    var color_manager = try mod_color.ColorManager.init(
+        allocator,
+        &rng,
+        .default,
+        meta.colors.len,
+    );
+
+    defer color_manager.free();
+
+    var matrix = try create_test_matrix(
+        allocator,
+        &rng,
+        &color_manager,
+    );
+
+    defer matrix.free();
+
+    const cells = matrix.matrix_current.?;
+
+    cells[4] = .{
+        .status = true,
+        .color = .{ 255, 0, 0 },
+    };
+
+    matrix.switch_cell(1, 1);
+
+    try std.testing.expect(!cells[4].status);
+    try std.testing.expect(cells[4].color == null);
+}
+
+test "switch_cell revives a dead cell with no living neighbors and assigns a random color" {
+    const allocator = std.testing.allocator;
+    var rng = SplitMix64.init(11);
+
+    const meta = mod_color.meta_of(.default);
+
+    var color_manager = try mod_color.ColorManager.init(
+        allocator,
+        &rng,
+        .default,
+        meta.colors.len,
+    );
+
+    defer color_manager.free();
+
+    var matrix = try create_test_matrix(
+        allocator,
+        &rng,
+        &color_manager,
+    );
+
+    defer matrix.free();
+
+    const cells = matrix.matrix_current.?;
+
+    try std.testing.expect(!cells[4].status);
+
+    matrix.switch_cell(1, 1);
+
+    try std.testing.expect(cells[4].status);
+    try std.testing.expect(cells[4].color != null);
+}
+
+test "switch_cell revives a dead cell with living neighbors and inherits color" {
+    const allocator = std.testing.allocator;
+    var rng = SplitMix64.init(12);
+
+    const meta = mod_color.meta_of(.default);
+
+    var color_manager = try mod_color.ColorManager.init(
+        allocator,
+        &rng,
+        .default,
+        meta.colors.len,
+    );
+
+    defer color_manager.free();
+
+    var matrix = try create_test_matrix(
+        allocator,
+        &rng,
+        &color_manager,
+    );
+    defer matrix.free();
+
+    const cells = matrix.matrix_current.?;
+    const neighbor_color = [3]u8{ 0, 255, 0 };
+
+    cells[0] = .{
+        .status = true,
+        .color = neighbor_color,
+    };
+
+    matrix.switch_cell(1, 1);
+
+    try std.testing.expect(cells[4].status);
+    try std.testing.expectEqual(neighbor_color, cells[4].color);
 }
