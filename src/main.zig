@@ -79,6 +79,8 @@ pub fn main() !void {
     var state = runtime.RuntimeState.init(
         config.start_ms,
         config.milliseconds,
+        config.debug,
+        config.controls,
     );
 
     var game_state = GameState{};
@@ -186,7 +188,11 @@ inline fn run_render_cycle(
     color_manager: *color.ColorManager,
 ) !void {
     const winsize = try console.winsize();
-    const padding = alignment.calculate_padding(config);
+
+    const padding = alignment.calculate_padding(
+        config,
+        state,
+    );
 
     var context: RenderContext = undefined;
 
@@ -219,7 +225,7 @@ inline fn run_render_cycle(
 
         try printer.print(console.RESET_CURSOR);
 
-        if (config.debug) {
+        if (state.show_debug()) {
             try debug.print_debug(
                 state,
                 persistent,
@@ -236,7 +242,7 @@ inline fn run_render_cycle(
             try context.matrix.next();
         }
 
-        if (config.controls) {
+        if (state.show_controls()) {
             try debug.print_controls(printer);
         }
 
@@ -294,6 +300,14 @@ fn run_input_loop(
             },
             'r', 'R', console.BACKSPACE, console.DEL => {
                 state.set_start_timestamp(std.time.milliTimestamp());
+                state.request_reload();
+            },
+            '/' => {
+                state.toggle_debug();
+                state.request_reload();
+            },
+            '?' => {
+                state.toggle_controls();
                 state.request_reload();
             },
             'q', 'Q', console.CTRL_C => {

@@ -241,6 +241,8 @@ The simulation accepts keyboard and mouse input while running.
 | `-` | Decrease the frame delay by 10 ms, down to 0 ms. |
 | `r`, `Backspace` | Request a matrix reload and reset the start timestamp. The random generator is not reinitialized. |
 | Left mouse button | Toggle the cell under the pointer, if it is within the board. |
+| `/` | Toggle debug output on and off. |
+| `?` | Toggle controls output on and off. |
 | `q`, `Ctrl+C` | Request a clean exit. |
 
 Input is processed on a separate thread, allowing the render loop to continue while waiting for input. Mouse events are decoded from terminal SGR sequences, and runtime flags use atomic operations to coordinate input and rendering.
