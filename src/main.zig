@@ -286,15 +286,15 @@ fn run_input_loop(
             'p', 'P', console.SPACE => {
                 state.toggle_pause();
             },
-            'r', 'R', console.BACKSPACE, console.DEL => {
-                state.start_timestamp.store(std.time.milliTimestamp(), .release);
-                state.request_reload();
-            },
             '+' => {
                 state.mod_speed(10);
             },
             '-' => {
                 state.mod_speed(-10);
+            },
+            'r', 'R', console.BACKSPACE, console.DEL => {
+                state.set_start_timestamp(std.time.milliTimestamp());
+                state.request_reload();
             },
             'q', 'Q', console.CTRL_C => {
                 state.request_exit();
