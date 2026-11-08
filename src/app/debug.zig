@@ -29,9 +29,9 @@ pub fn print_debug(
     context: *RenderContext,
     target_cursor: usize,
 ) !usize {
-    var allocator = scratch.allocator();
+    const allocator = scratch.allocator();
 
-    var matrix = context.matrix;
+    const matrix = context.matrix;
 
     const cols = matrix.cols_len();
     const rows = matrix.rows_len();
@@ -40,18 +40,18 @@ pub fn print_debug(
     const time = try kit_time.milliseconds_to_time(allocator, state.get_runtime(), null);
     defer allocator.free(time);
 
-    var col = @tagName(config.color);
-    if (config.inheritance) {
-        col = "*Inheritance";
-    }
+    const color = if (config.inheritance)
+        "*inheritance"
+    else
+        @tagName(config.color);
 
-    var mut: []const u8 = "disabled";
-    if (matrix.mutation_generation() >= 0) {
-        mut = try printer.format("{d}/{d}", .{
+    const mutation: []const u8 = if (matrix.mutation_generation() >= 0)
+        try printer.format("{d}/{d}", .{
             matrix.current_generation(),
             matrix.mutation_generation(),
-        });
-    }
+        })
+    else
+        "disabled";
 
     var max_cursor: usize = 0;
 
