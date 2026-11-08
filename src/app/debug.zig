@@ -90,18 +90,18 @@ pub fn print_debug(
         target_cursor,
         width,
         "Seed: {d} | " ++
-            "Matrix: {d} | " ++
-            "Columns: {d} | " ++
-            "Rows: {d} | " ++
+            "Formatter: {s} | " ++
             "Symbol: {s} | " ++
-            "Color: {s}",
+            "Color: {s} | " ++
+            "Probability: {d}% | " ++
+            "Mutation: {s}",
         .{
             config.seed,
-            area,
-            cols,
-            rows,
+            @tagName(config.color_mode),
             @tagName(config.symbol_mode),
-            col,
+            color,
+            config.alive_probability,
+            mutation,
         },
     );
 
@@ -111,16 +111,19 @@ pub fn print_debug(
         target_cursor,
         width,
         "Speed: {d}ms | " ++
-            "Probability: {d}% | " ++
-            "Time: {s} | " ++
+            "Matrix: {d} | " ++
+            "Cols: {d} | " ++
+            "Rows: {d} | " ++
             "Population: {d} | " ++
-            "Mutation: {s}",
+            "Time: {s} | ",
+
         .{
             state.get_speed(),
-            config.alive_probability,
-            time,
+            area,
+            cols,
+            rows,
             matrix.alive_population(),
-            mut,
+            time,
         },
     );
 
