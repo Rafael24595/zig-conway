@@ -1,12 +1,12 @@
 .{
     .name = .zig_conway,
-    .version = "0.8.0",
+    .version = "0.9.0",
     .fingerprint = 0xb7e88ad7ee5e3e4b,
     .minimum_zig_version = "0.15.1",
     .dependencies = .{
         .terminal_kit = .{
-            .url = "https://github.com/Rafael24595/zig-terminal-kit/releases/download/0.12.0/zig_terminal_kit-0.12.0.tar.gz",
-            .hash = "zig_terminal_kit-0.12.0-MaGLjpWxAQC5YsLodkGc9PN0SpILFQD2QK19rT2XnJW4",
+            .url = "https://github.com/Rafael24595/zig-terminal-kit/releases/download/0.13.0/zig_terminal_kit-0.13.0.tar.gz",
+            .hash = "zig_terminal_kit-0.13.0-MaGLjhzBAQA09VHQJE9pjociMP4q239csYAhYKt4eeNx",
         },
     },
     .paths = .{
