@@ -73,7 +73,7 @@ pub const RenderContext = struct {
 
         errdefer self.matrix_printer.free();
 
-        self.counter = Counter.init();
+        self.counter = Counter.init(config.clock);
     }
 
     /// Releases the resources owned by the rendering context.

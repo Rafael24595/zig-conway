@@ -42,10 +42,12 @@ pub fn calculate_padding(
 
 test "calculate_padding returns zero when all options are disabled" {
     const config = Configuration{
+        .clock = undefined,
         .inheritance = false,
     };
 
     var state = RuntimeState{
+        .clock = undefined,
         .debug = .init(false),
         .controls = .init(false),
     };
@@ -57,10 +59,12 @@ test "calculate_padding returns zero when all options are disabled" {
 
 test "calculate_padding reserves space for debug output" {
     const config = Configuration{
+        .clock = undefined,
         .inheritance = false,
     };
 
     var state = RuntimeState{
+        .clock = undefined,
         .debug = .init(true),
         .controls = .init(false),
     };
@@ -73,10 +77,12 @@ test "calculate_padding reserves space for debug output" {
 
 test "calculate_padding reserves space for inheritance information" {
     const config = Configuration{
+        .clock = undefined,
         .inheritance = true,
     };
 
     var state = RuntimeState{
+        .clock = undefined,
         .debug = .init(true),
         .controls = .init(false),
     };
@@ -89,10 +95,12 @@ test "calculate_padding reserves space for inheritance information" {
 
 test "calculate_padding reserves space for debug output and controls" {
     const config = Configuration{
+        .clock = undefined,
         .inheritance = true,
     };
 
     var state = RuntimeState{
+        .clock = undefined,
         .debug = .init(true),
         .controls = .init(true),
     };
