@@ -451,13 +451,13 @@ test "Configuration uses the expected default values" {
     try std.testing.expectEqual(0.3, config.alive_probability);
     try std.testing.expectEqual(-1, config.mutation_generation);
 
-    try std.testing.expectEqual(symbol.Theme.classic, config.symbol_mode);
-    try std.testing.expectEqual(formatter.FormatterCode.rgb, config.color_mode);
+    try std.testing.expectEqual(.classic, config.symbol_mode);
+    try std.testing.expectEqual(.rgb, config.color_mode);
 
-    try std.testing.expectEqual(color.Theme.default, config.inheritance_mode);
-    try std.testing.expectEqual(color.meta_of(color.Theme.default).colors.len, config.inheritance_faction);
+    try std.testing.expectEqual(.default, config.inheritance_mode);
+    try std.testing.expectEqual(color.meta_of(.default).colors.len, config.inheritance_faction);
 
-    try std.testing.expectEqual(kit_color.Color.white, config.color);
+    try std.testing.expectEqual(.white, config.color);
 
     try std.testing.expectEqual(.unfo, std.meta.activeTag(config.formatter_matrix));
     try std.testing.expectEqual(.unfo, std.meta.activeTag(config.formatter_cell));
