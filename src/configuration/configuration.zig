@@ -20,8 +20,6 @@ const color = @import("../domain/color.zig");
 
 const formatter = @import("../io/formatter.zig");
 
-const HelperExpandValues = "(use \"help\" to list available modes)";
-
 const frame_pause_ms: u64 = switch (builtin.os.tag) {
     .windows => 45,
     else => 50,
@@ -87,7 +85,7 @@ const FLAG_THEME_SYMBOL: Flag = Flag{
     .type = "<enum>",
     .desc = "Theme symbol",
     .name = "Theme symbol",
-    .aux_desc = HelperExpandValues,
+    .aux_desc = kit_conf.HelperExpandValues,
 };
 
 const FLAG_INHERITANCE: Flag = Flag{
@@ -114,7 +112,7 @@ const FLAG_COLOR: Flag = Flag{
     .type = "<enum>",
     .desc = "Color",
     .name = "color",
-    .aux_desc = HelperExpandValues,
+    .aux_desc = kit_conf.HelperExpandValues,
 };
 
 const FLAG_COLOR_MODE: Flag = Flag{
@@ -122,7 +120,7 @@ const FLAG_COLOR_MODE: Flag = Flag{
     .type = "<enum>",
     .desc = "Color mode",
     .name = "color mode",
-    .aux_desc = HelperExpandValues,
+    .aux_desc = kit_conf.HelperExpandValues,
 };
 
 /// Stores the application settings parsed from command-line arguments,
