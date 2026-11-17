@@ -20,6 +20,8 @@ const color = @import("../domain/color.zig");
 
 const formatter = @import("../io/formatter.zig");
 
+const HelperExpandValues = "(use \"help\" to list available modes)";
+
 const frame_pause_ms: u64 = switch (builtin.os.tag) {
     .windows => 45,
     else => 50,
@@ -47,7 +49,7 @@ const FLAG_DEBUG: Flag = Flag{
 };
 
 const FLAG_HELP_CONTROLS: Flag = Flag{
-    .flag_short = "-hc",
+    .flag_short = "-k",
     .desc = "Show the controls map",
     .name = "controls map",
 };
@@ -85,7 +87,7 @@ const FLAG_THEME_SYMBOL: Flag = Flag{
     .type = "<enum>",
     .desc = "Theme symbol",
     .name = "Theme symbol",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = HelperExpandValues,
 };
 
 const FLAG_INHERITANCE: Flag = Flag{
@@ -112,7 +114,7 @@ const FLAG_COLOR: Flag = Flag{
     .type = "<enum>",
     .desc = "Color",
     .name = "color",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = HelperExpandValues,
 };
 
 const FLAG_COLOR_MODE: Flag = Flag{
@@ -120,7 +122,7 @@ const FLAG_COLOR_MODE: Flag = Flag{
     .type = "<enum>",
     .desc = "Color mode",
     .name = "color mode",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = HelperExpandValues,
 };
 
 /// Stores the application settings parsed from command-line arguments,
@@ -319,7 +321,9 @@ pub const Configuration = struct {
     ) ![]u8 {
         var buffer = try std.ArrayList(u8).initCapacity(allocator, 0);
 
-        try buffer.appendSlice(allocator, "\nUsage: zig-conway             [options] \n\n");
+        try buffer.appendSlice(allocator, "\nUsage: zig-conway             [options] \n");
+
+        try buffer.appendSlice(allocator, "\n System: \n");
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
@@ -332,6 +336,8 @@ pub const Configuration = struct {
             FLAG_VERSION,
             .none,
         ));
+
+        try buffer.appendSlice(allocator, "\n Runtime: \n");
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
@@ -368,6 +374,8 @@ pub const Configuration = struct {
             FLAG_MUTATION_GENERATION,
             .{ .int = @intCast(config.mutation_generation) },
         ));
+
+        try buffer.appendSlice(allocator, "\n Appearance: \n");
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
@@ -443,13 +451,13 @@ test "Configuration uses the expected default values" {
     try std.testing.expectEqual(0.3, config.alive_probability);
     try std.testing.expectEqual(-1, config.mutation_generation);
 
-    try std.testing.expectEqual(symbol.Theme.classic, config.symbol_mode);
-    try std.testing.expectEqual(formatter.FormatterCode.rgb, config.color_mode);
+    try std.testing.expectEqual(.classic, config.symbol_mode);
+    try std.testing.expectEqual(.rgb, config.color_mode);
 
-    try std.testing.expectEqual(color.Theme.default, config.inheritance_mode);
-    try std.testing.expectEqual(color.meta_of(color.Theme.default).colors.len, config.inheritance_faction);
+    try std.testing.expectEqual(.default, config.inheritance_mode);
+    try std.testing.expectEqual(color.meta_of(.default).colors.len, config.inheritance_faction);
 
-    try std.testing.expectEqual(kit_color.Color.white, config.color);
+    try std.testing.expectEqual(.white, config.color);
 
     try std.testing.expectEqual(.unfo, std.meta.activeTag(config.formatter_matrix));
     try std.testing.expectEqual(.unfo, std.meta.activeTag(config.formatter_cell));
