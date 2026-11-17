@@ -14,9 +14,9 @@ Customize the simulation with different cell symbols, color palettes, color inhe
 - **Dynamic matrix sizing:** Adapt the matrix to the terminal dimensions and reload it when the window is resized.
 - **Cell symbol themes:** Choose from ASCII and Unicode symbols, including blocks, dots, stars, and other shapes.
 - **Color modes:** Render cells using RGB or ANSI terminal colors.
-- **Color inheritance:** New cells can inherit a neighboring color or blend the colors of their living neighbors.
+- **Color inheritance:** New cells can inherit colors from neighboring cells or blend the colors of their living neighbors.
 - **Color palettes:** Choose from Default, Pastel, Neon, Earthy, Cool, and Warm palettes.
-- **Mutation:** Periodically invert a small proportion of cells to introduce new patterns. Set a negative mutation generation to disable mutations.
+- **Mutation:** Periodically introduce random changes to the simulation. Set a negative mutation interval to disable mutations.
 - **Debug mode:** Inspect runtime configuration, matrix dimensions, population, generation, and memory usage.
 - **Interactive controls:** Pause, reload, adjust the frame delay, or exit while the simulation is running.
 - **Mouse interaction:** Click cells to toggle their state while the simulation is running.
@@ -61,22 +61,39 @@ zig-out/bin/zig-conway --help
 
 ## Command-Line Options
 
+### System
+
 | Option | Description | Default |
 |---|---|---|
 | `-h`, `--help` | Display the help message | — |
 | `-v`, `--version` | Display the project version | — |
+
+### Runtime
+
+| Option | Description | Default |
+|---|---|---|
 | `-d` | Enable debug output | Disabled |
-| `-hc` | Display the interactive controls map | Disabled |
+| `-k` | Display the controls map | Disabled |
 | `-s` | Set the random seed | Current timestamp in milliseconds |
 | `-ms` | Set the frame delay in milliseconds | `45` ms on Windows; `50` ms on other platforms |
-| `-l` | Set the initial probability that a cell is alive | `0.3` |
+
+### Simulation
+
+| Option | Description | Default |
+|---|---|---|
+| `-l` | Set the initial probability that a cell is alive | `0.30` |
 | `-g` | Set the mutation interval in generations; a negative value disables mutations | `-1` |
+
+### Appearance
+
+| Option | Description | Default |
+|---|---|---|
 | `-ts` | Set the cell symbol theme | `classic` |
-| `-cm` | Set the color format | `rgb` |
-| `-i` | Enable color inheritance; overrides the regular color setting | Disabled |
+| `-i` | Enable color inheritance | Disabled |
 | `-if` | Set the number of colors used for inheritance | `9` |
 | `-im` | Set the inheritance color palette | `default` |
 | `-c` | Set the cell color when inheritance is disabled | `white` |
+| `-cm` | Set the color mode | `rgb` |
 
 Run `zig-out/bin/zig-conway --help` for the exact syntax and accepted values supported by your build.
 
@@ -104,7 +121,7 @@ Run `zig-out/bin/zig-conway --help` for the exact syntax and accepted values sup
 
 ### Available color modes (`-cm`)
 
-- `rgb` — true-color ANSI escape sequences.
+- `rgb` — True-color ANSI escape sequences.
 - `ansi` — 256-color terminal palette.
 
 ### Available inheritance palettes (`-im`)
@@ -196,19 +213,19 @@ zig-out/bin/zig-conway -l 0.5 -g 30 -ts stars -cm ansi
 
 ## Color and Rendering
 
-Living cells are rendered using the selected symbol and color settings. Dead cells are rendered as spaces.
+Living cells are rendered using the selected symbol theme and color configuration. Dead cells are rendered as spaces.
 
-RGB mode uses true-color escape sequences. ANSI mode maps RGB values to the 256-color terminal palette and may perform better in some terminal emulators.
+RGB mode uses true-color ANSI escape sequences. ANSI mode maps colors to the 256-color terminal palette and may perform better in some terminal emulators.
 
-When inheritance is enabled, newly born cells receive colors based on their living neighbors. Depending on the configured inheritance behavior, the color may be selected from a neighbor or blended from multiple neighboring colors. The `-if` option limits the number of colors sampled from the selected palette.
+When color inheritance is enabled, newly born cells receive colors based on their living neighbors. Depending on the configured inheritance behavior, the color may be selected from a neighboring cell or blended from multiple neighboring colors.
 
-A dark terminal background is recommended for the intended visual style and contrast.
+The `-if` option controls the number of colors used for inheritance, while `-im` selects the inheritance palette. Color inheritance takes precedence over the regular cell color setting (`-c`).
 
 ## Mutation
 
-Mutation introduces random changes to the simulation after the configured number of generations. The mutation count is proportional to matrix size, with a target of approximately 0.1% of the cells per mutation event and at least one attempted mutation.
+Mutation introduces random changes to the simulation at the configured generation interval. The number of attempted mutations is proportional to the matrix size, targeting approximately 0.1% of cells per mutation event, with at least one attempted mutation.
 
-Use `-g` to set the interval. A negative value disables mutations.
+Use `-g` to configure the interval in generations. A negative value disables mutations.
 
 ## Dynamic Matrix Size
 
@@ -226,7 +243,8 @@ Enable debug output with `-d` to inspect runtime information, including:
 - Initial alive-cell probability.
 - Mutation interval.
 - Symbol theme and color configuration.
-- Matrix dimensions
+- Color inheritance settings, including palette and color count.
+- Matrix dimensions.
 - Living-cell population.
 - Generation information, where available in the current debug output.
 
